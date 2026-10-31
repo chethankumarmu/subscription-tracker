@@ -2,6 +2,7 @@ package com.brightloop.subscription.chatbot.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "chat_sessions")
@@ -59,8 +60,15 @@ public class ChatSession {
         public ChatSessionBuilder userId(Long userId) { this.userId = userId; return this; }
         public ChatSessionBuilder customerId(Long customerId) { this.customerId = customerId; return this; }
         public ChatSessionBuilder status(ChatSessionStatus status) { this.status = status; return this; }
+        public ChatSessionBuilder status(String status) {
+            try { this.status = ChatSessionStatus.valueOf(status.toUpperCase()); }
+            catch (Exception e) { this.status = ChatSessionStatus.BOT; }
+            return this;
+        }
         public ChatSessionBuilder startedAt(Instant startedAt) { this.startedAt = startedAt; return this; }
+        public ChatSessionBuilder startedAt(OffsetDateTime startedAt) { this.startedAt = startedAt != null ? startedAt.toInstant() : Instant.now(); return this; }
         public ChatSessionBuilder endedAt(Instant endedAt) { this.endedAt = endedAt; return this; }
+        public ChatSessionBuilder endedAt(OffsetDateTime endedAt) { this.endedAt = endedAt != null ? endedAt.toInstant() : null; return this; }
         public ChatSessionBuilder ticketId(Long ticketId) { this.ticketId = ticketId; return this; }
 
         public ChatSession build() {
@@ -76,6 +84,10 @@ public class ChatSession {
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public ChatSessionStatus getStatus() { return status; }
     public void setStatus(ChatSessionStatus status) { this.status = status; }
+    public void setStatus(String status) {
+        try { this.status = ChatSessionStatus.valueOf(status.toUpperCase()); }
+        catch (Exception e) { this.status = ChatSessionStatus.BOT; }
+    }
     public Instant getStartedAt() { return startedAt; }
     public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
     public Instant getEndedAt() { return endedAt; }
