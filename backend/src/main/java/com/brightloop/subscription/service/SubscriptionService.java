@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @Service("apiSubscriptionService")
@@ -22,6 +23,8 @@ public class SubscriptionService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceLineRepository invoiceLineRepository;
     private final UserRepository userRepository;
+    private final DiscountRepository discountRepository;
+    private final DiscountRedemptionRepository discountRedemptionRepository;
 
     public SubscriptionService(
             SubscriptionRepository subscriptionRepository,
@@ -33,7 +36,9 @@ public class SubscriptionService {
             TaxRuleRepository taxRuleRepository,
             InvoiceRepository invoiceRepository,
             InvoiceLineRepository invoiceLineRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            DiscountRepository discountRepository,
+            DiscountRedemptionRepository discountRedemptionRepository
     ) {
         this.subscriptionRepository = subscriptionRepository;
         this.subscriptionLineRepository = subscriptionLineRepository;
@@ -45,6 +50,8 @@ public class SubscriptionService {
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineRepository = invoiceLineRepository;
         this.userRepository = userRepository;
+        this.discountRepository = discountRepository;
+        this.discountRedemptionRepository = discountRedemptionRepository;
     }
 
     private Long getStaffOrAdminUserId() {
@@ -140,16 +147,47 @@ public class SubscriptionService {
                 .lineTotalPaise(unitPrice)
                 .build());
 
+        // Validate and apply discount promotion if provided
+        Discount discount = null;
+        long discountPaise = 0L;
+        if (request.getDiscountCode() != null && !request.getDiscountCode().trim().isBlank()) {
+            String code = request.getDiscountCode().trim().toUpperCase();
+            discount = discountRepository.findByCodeAndIsActiveTrue(code)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid or inactive coupon code: " + code));
+
+            OffsetDateTime now = OffsetDateTime.now();
+            if (discount.getStartsAt() != null && discount.getStartsAt().isAfter(now)) {
+                throw new IllegalArgumentException("Coupon is not active yet: " + code);
+            }
+            if (discount.getEndsAt() != null && discount.getEndsAt().isBefore(now)) {
+                throw new IllegalArgumentException("Coupon has expired: " + code);
+            }
+            long currentRedemptions = discountRedemptionRepository.countByDiscountId(discount.getId());
+            if (discount.getUsageLimit() != null && currentRedemptions >= discount.getUsageLimit()) {
+                throw new IllegalArgumentException("Coupon redemption limit reached: " + code);
+            }
+            if (discount.getMinAmountPaise() != null && unitPrice < discount.getMinAmountPaise()) {
+                throw new IllegalArgumentException("Order amount below minimum required for coupon: " + code);
+            }
+
+            if ("PERCENT".equalsIgnoreCase(discount.getDiscountType())) {
+                discountPaise = Math.round(unitPrice * (discount.getValue() / 10000.0));
+            } else if ("FIXED".equalsIgnoreCase(discount.getDiscountType())) {
+                discountPaise = Math.min(unitPrice, discount.getValue());
+            }
+        }
+
         // Generate immediate invoice for subscription
-        long taxAmount = Math.round(unitPrice * 0.18);
-        long totalAmount = unitPrice + taxAmount;
+        long discountedSubtotal = Math.max(0L, unitPrice - discountPaise);
+        long taxAmount = Math.round(discountedSubtotal * 0.18);
+        long totalAmount = discountedSubtotal + taxAmount;
 
         String invNumber = "INV_0000" + (70 + invoiceRepository.count() + 1);
         Invoice inv = invoiceRepository.save(Invoice.builder()
                 .number(invNumber)
                 .subscriptionId(sub.getId())
                 .customerId(customer.getId())
-                .status(unitPrice == 0 ? "PAID" : "CONFIRMED")
+                .status(totalAmount == 0 ? "PAID" : "CONFIRMED")
                 .periodStart(LocalDate.now())
                 .periodEnd("YEARLY".equalsIgnoreCase(request.getBillingCycle())
                         ? LocalDate.now().plusYears(1)
@@ -158,23 +196,40 @@ public class SubscriptionService {
                 .dueDate(LocalDate.now().plusDays(30))
                 .currency("INR")
                 .subtotalPaise(unitPrice)
-                .discountPaise(0L)
+                .discountPaise(discountPaise)
                 .taxPaise(taxAmount)
                 .totalPaise(totalAmount)
-                .amountPaidPaise(unitPrice == 0 ? totalAmount : 0L)
+                .amountPaidPaise(totalAmount == 0 ? totalAmount : 0L)
                 .build());
 
         invoiceLineRepository.save(InvoiceLine.builder()
                 .invoiceId(inv.getId())
                 .productId(prod != null ? prod.getId() : 1L)
-                .description(plan.getName() + " Subscription (" + request.getBillingCycle() + ")")
+                .description(plan.getName() + " Subscription (" + request.getBillingCycle() + ")" + (discount != null ? " [Promo: " + discount.getCode() + "]" : ""))
                 .quantity(1)
                 .unitPricePaise(unitPrice)
+                .discountPaise(discountPaise)
                 .taxRuleId(taxRule != null ? taxRule.getId() : null)
                 .taxRateBps(1800)
                 .taxPaise(taxAmount)
                 .lineTotalPaise(totalAmount)
                 .build());
+
+        if (discount != null && discountPaise > 0) {
+            discountRedemptionRepository.save(new DiscountRedemption(
+                    null,
+                    discount.getId(),
+                    inv.getId(),
+                    sub.getId(),
+                    discountPaise,
+                    OffsetDateTime.now()
+            ));
+            long countAfter = discountRedemptionRepository.countByDiscountId(discount.getId());
+            if (discount.getUsageLimit() != null && countAfter >= discount.getUsageLimit()) {
+                discount.setIsActive(false);
+                discountRepository.save(discount);
+            }
+        }
 
         return sub;
     }

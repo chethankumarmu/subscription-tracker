@@ -17,19 +17,22 @@ public class BillingService {
     private final PaymentRepository paymentRepository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
+    private final DiscountRedemptionRepository discountRedemptionRepository;
 
     public BillingService(
             InvoiceRepository invoiceRepository,
             InvoiceLineRepository invoiceLineRepository,
             PaymentRepository paymentRepository,
             CustomerRepository customerRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            DiscountRedemptionRepository discountRedemptionRepository
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineRepository = invoiceLineRepository;
         this.paymentRepository = paymentRepository;
         this.customerRepository = customerRepository;
         this.userRepository = userRepository;
+        this.discountRedemptionRepository = discountRedemptionRepository;
     }
 
     private Long getStaffOrAdminUserId() {
@@ -81,12 +84,14 @@ public class BillingService {
         Customer cust = customerRepository.findById(inv.getCustomerId()).orElse(null);
         List<InvoiceLine> lines = invoiceLineRepository.findByInvoiceId(inv.getId());
         List<Payment> payments = paymentRepository.findByInvoiceId(inv.getId());
+        List<DiscountRedemption> discounts = discountRedemptionRepository.findByInvoiceId(inv.getId());
 
         Map<String, Object> result = new HashMap<>();
         result.put("invoice", inv);
         result.put("customer", cust);
         result.put("lines", lines);
         result.put("payments", payments);
+        result.put("discounts", discounts);
         result.put("balancePaise", Math.max(0L, inv.getTotalPaise() - inv.getAmountPaidPaise()));
         return result;
     }

@@ -10,5 +10,6 @@ import java.util.List;
 public interface DiscountRedemptionRepository extends JpaRepository<DiscountRedemption, Long> {
     List<DiscountRedemption> findByInvoiceId(Long invoiceId);
     List<DiscountRedemption> findBySubscriptionId(Long subscriptionId);
+    long countByDiscountId(Long discountId);
 }
 
