@@ -2,13 +2,19 @@ spring:
   application:
     name: subscription-platform
   datasource:
+<<<<<<< HEAD
     url: jdbc:postgresql://localhost:5432/brightloop
     username: postgres
     password: 583218
+=======
+    url: jdbc:postgresql://localhost:5432/brightlook
+    username: postgres
+    password: Ninja#@3.14
+>>>>>>> 0ea5431 (feat(backend,frontend): implement REST APIs, domain entities, repositories, services, and frontend client)
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     open-in-view: false
   flyway:
     enabled: true
