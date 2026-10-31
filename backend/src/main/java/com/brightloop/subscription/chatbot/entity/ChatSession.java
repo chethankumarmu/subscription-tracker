@@ -1,7 +1,7 @@
-package com.brightloop.subscription.support.entity;
+package com.brightloop.subscription.chatbot.entity;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "chat_sessions")
@@ -17,26 +17,27 @@ public class ChatSession {
     @Column(name = "customer_id")
     private Long customerId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String status = "BOT";
+    private ChatSessionStatus status = ChatSessionStatus.BOT;
 
-    @Column(name = "started_at", nullable = false)
-    private OffsetDateTime startedAt = OffsetDateTime.now();
+    @Column(name = "started_at", nullable = false, updatable = false)
+    private Instant startedAt = Instant.now();
 
     @Column(name = "ended_at")
-    private OffsetDateTime endedAt;
+    private Instant endedAt;
 
     @Column(name = "ticket_id")
     private Long ticketId;
 
     public ChatSession() {}
 
-    public ChatSession(Long id, Long userId, Long customerId, String status, OffsetDateTime startedAt, OffsetDateTime endedAt, Long ticketId) {
+    public ChatSession(Long id, Long userId, Long customerId, ChatSessionStatus status, Instant startedAt, Instant endedAt, Long ticketId) {
         this.id = id;
         this.userId = userId;
         this.customerId = customerId;
-        this.status = status != null ? status : "BOT";
-        this.startedAt = startedAt != null ? startedAt : OffsetDateTime.now();
+        this.status = status != null ? status : ChatSessionStatus.BOT;
+        this.startedAt = startedAt != null ? startedAt : Instant.now();
         this.endedAt = endedAt;
         this.ticketId = ticketId;
     }
@@ -49,17 +50,17 @@ public class ChatSession {
         private Long id;
         private Long userId;
         private Long customerId;
-        private String status = "BOT";
-        private OffsetDateTime startedAt = OffsetDateTime.now();
-        private OffsetDateTime endedAt;
+        private ChatSessionStatus status = ChatSessionStatus.BOT;
+        private Instant startedAt = Instant.now();
+        private Instant endedAt;
         private Long ticketId;
 
         public ChatSessionBuilder id(Long id) { this.id = id; return this; }
         public ChatSessionBuilder userId(Long userId) { this.userId = userId; return this; }
         public ChatSessionBuilder customerId(Long customerId) { this.customerId = customerId; return this; }
-        public ChatSessionBuilder status(String status) { this.status = status; return this; }
-        public ChatSessionBuilder startedAt(OffsetDateTime startedAt) { this.startedAt = startedAt; return this; }
-        public ChatSessionBuilder endedAt(OffsetDateTime endedAt) { this.endedAt = endedAt; return this; }
+        public ChatSessionBuilder status(ChatSessionStatus status) { this.status = status; return this; }
+        public ChatSessionBuilder startedAt(Instant startedAt) { this.startedAt = startedAt; return this; }
+        public ChatSessionBuilder endedAt(Instant endedAt) { this.endedAt = endedAt; return this; }
         public ChatSessionBuilder ticketId(Long ticketId) { this.ticketId = ticketId; return this; }
 
         public ChatSession build() {
@@ -73,12 +74,12 @@ public class ChatSession {
     public void setUserId(Long userId) { this.userId = userId; }
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public OffsetDateTime getStartedAt() { return startedAt; }
-    public void setStartedAt(OffsetDateTime startedAt) { this.startedAt = startedAt; }
-    public OffsetDateTime getEndedAt() { return endedAt; }
-    public void setEndedAt(OffsetDateTime endedAt) { this.endedAt = endedAt; }
+    public ChatSessionStatus getStatus() { return status; }
+    public void setStatus(ChatSessionStatus status) { this.status = status; }
+    public Instant getStartedAt() { return startedAt; }
+    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
+    public Instant getEndedAt() { return endedAt; }
+    public void setEndedAt(Instant endedAt) { this.endedAt = endedAt; }
     public Long getTicketId() { return ticketId; }
     public void setTicketId(Long ticketId) { this.ticketId = ticketId; }
 }

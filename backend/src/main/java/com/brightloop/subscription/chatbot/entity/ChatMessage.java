@@ -1,7 +1,7 @@
-package com.brightloop.subscription.support.entity;
+package com.brightloop.subscription.chatbot.entity;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "chat_messages")
@@ -14,8 +14,9 @@ public class ChatMessage {
     @Column(name = "session_id", nullable = false)
     private Long sessionId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String sender;
+    private MessageSender sender;
 
     @Column(nullable = false, columnDefinition = "text")
     private String body;
@@ -23,18 +24,18 @@ public class ChatMessage {
     @Column(length = 100)
     private String intent;
 
-    @Column(name = "created_at", nullable = false)
-    private OffsetDateTime createdAt = OffsetDateTime.now();
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 
     public ChatMessage() {}
 
-    public ChatMessage(Long id, Long sessionId, String sender, String body, String intent, OffsetDateTime createdAt) {
+    public ChatMessage(Long id, Long sessionId, MessageSender sender, String body, String intent, Instant createdAt) {
         this.id = id;
         this.sessionId = sessionId;
         this.sender = sender;
         this.body = body;
         this.intent = intent;
-        this.createdAt = createdAt != null ? createdAt : OffsetDateTime.now();
+        this.createdAt = createdAt != null ? createdAt : Instant.now();
     }
 
     public static ChatMessageBuilder builder() {
@@ -44,17 +45,17 @@ public class ChatMessage {
     public static class ChatMessageBuilder {
         private Long id;
         private Long sessionId;
-        private String sender;
+        private MessageSender sender;
         private String body;
         private String intent;
-        private OffsetDateTime createdAt = OffsetDateTime.now();
+        private Instant createdAt = Instant.now();
 
         public ChatMessageBuilder id(Long id) { this.id = id; return this; }
         public ChatMessageBuilder sessionId(Long sessionId) { this.sessionId = sessionId; return this; }
-        public ChatMessageBuilder sender(String sender) { this.sender = sender; return this; }
+        public ChatMessageBuilder sender(MessageSender sender) { this.sender = sender; return this; }
         public ChatMessageBuilder body(String body) { this.body = body; return this; }
         public ChatMessageBuilder intent(String intent) { this.intent = intent; return this; }
-        public ChatMessageBuilder createdAt(OffsetDateTime createdAt) { this.createdAt = createdAt; return this; }
+        public ChatMessageBuilder createdAt(Instant createdAt) { this.createdAt = createdAt; return this; }
 
         public ChatMessage build() {
             return new ChatMessage(id, sessionId, sender, body, intent, createdAt);
@@ -65,12 +66,12 @@ public class ChatMessage {
     public void setId(Long id) { this.id = id; }
     public Long getSessionId() { return sessionId; }
     public void setSessionId(Long sessionId) { this.sessionId = sessionId; }
-    public String getSender() { return sender; }
-    public void setSender(String sender) { this.sender = sender; }
+    public MessageSender getSender() { return sender; }
+    public void setSender(MessageSender sender) { this.sender = sender; }
     public String getBody() { return body; }
     public void setBody(String body) { this.body = body; }
     public String getIntent() { return intent; }
     public void setIntent(String intent) { this.intent = intent; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

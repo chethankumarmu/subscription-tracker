@@ -1,7 +1,9 @@
 package com.brightloop.subscription.support.entity;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "support_tickets")
@@ -81,10 +83,14 @@ public class SupportTicket {
         public SupportTicketBuilder sessionId(Long sessionId) { this.sessionId = sessionId; return this; }
         public SupportTicketBuilder subject(String subject) { this.subject = subject; return this; }
         public SupportTicketBuilder status(String status) { this.status = status; return this; }
+        public SupportTicketBuilder status(TicketStatus status) { this.status = status != null ? status.name() : "OPEN"; return this; }
         public SupportTicketBuilder priority(String priority) { this.priority = priority; return this; }
+        public SupportTicketBuilder priority(TicketPriority priority) { this.priority = priority != null ? priority.name() : "NORMAL"; return this; }
         public SupportTicketBuilder assignedStaffId(Long assignedStaffId) { this.assignedStaffId = assignedStaffId; return this; }
         public SupportTicketBuilder createdAt(OffsetDateTime createdAt) { this.createdAt = createdAt; return this; }
+        public SupportTicketBuilder createdAt(Instant createdAt) { this.createdAt = createdAt != null ? OffsetDateTime.ofInstant(createdAt, ZoneOffset.UTC) : OffsetDateTime.now(); return this; }
         public SupportTicketBuilder resolvedAt(OffsetDateTime resolvedAt) { this.resolvedAt = resolvedAt; return this; }
+        public SupportTicketBuilder resolvedAt(Instant resolvedAt) { this.resolvedAt = resolvedAt != null ? OffsetDateTime.ofInstant(resolvedAt, ZoneOffset.UTC) : null; return this; }
         public SupportTicketBuilder version(Integer version) { this.version = version; return this; }
 
         public SupportTicket build() {
@@ -104,14 +110,17 @@ public class SupportTicket {
     public void setSubject(String subject) { this.subject = subject; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public void setStatus(TicketStatus status) { this.status = status != null ? status.name() : "OPEN"; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
+    public void setPriority(TicketPriority priority) { this.priority = priority != null ? priority.name() : "NORMAL"; }
     public Long getAssignedStaffId() { return assignedStaffId; }
     public void setAssignedStaffId(Long assignedStaffId) { this.assignedStaffId = assignedStaffId; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getResolvedAt() { return resolvedAt; }
     public void setResolvedAt(OffsetDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
+    public void setResolvedAt(Instant resolvedAt) { this.resolvedAt = resolvedAt != null ? OffsetDateTime.ofInstant(resolvedAt, ZoneOffset.UTC) : null; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
 }

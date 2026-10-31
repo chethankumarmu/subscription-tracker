@@ -1,6 +1,6 @@
-package com.brightloop.subscription.support.repository;
+package com.brightloop.subscription.chatbot.repository;
 
-import com.brightloop.subscription.support.entity.ChatMessage;
+import com.brightloop.subscription.chatbot.entity.ChatMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
-    List<ChatMessage> findBySessionIdOrderByCreatedAtAsc(Long sessionId);
+
+    List<ChatMessage> findAllBySessionIdOrderByCreatedAtAsc(Long sessionId);
 }
 
