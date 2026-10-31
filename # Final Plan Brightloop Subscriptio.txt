@@ -1,0 +1,262 @@
+# Final Plan: Brightloop Subscription Platform
+
+## Assumptions (confirm or correct)
+
+- Backend is **Java 21, Spring Boot 3, Maven**. Frontend is **React + Vite + TypeScript**.
+- Chatbot LLM is **Ollama** running locally, with a rule-based fallback.
+- You host the app yourselves, so the repo includes a **Docker Compose** file for the API, Postgres, and Ollama. Local runs use the same file.
+- A 7.5-hour build can't prove real-world scale. This plan makes the system *scalable by design* (stateless services, indexed queries, idempotent jobs, versioned plans) and demonstrates the performance target on seeded data.
+
+## Architecture
+
+**Style:** modular monolith. One deployable Spring Boot app with strict module boundaries. It can split into services later without rewriting business logic.
+
+```
+React SPA ──HTTPS──► Spring Boot API (stateless, JWT)
+                       ├── auth        ├── catalog (products, variants)
+                       ├── plans       ├── subscriptions (lifecycle)
+                       ├── billing     ├── discounts (admin only)
+                       ├── payments    ├── reporting (finance SQL)
+                       ├── support     └── chatbot ──► Ollama (local LLM)
+                       └── jobs (billing runs, outbox emails)
+                                  │
+                              PostgreSQL 16 (+ Flyway migrations)
+```
+
+**Scalability decisions:**
+- **Stateless API:** no server-side sessions. Any number of instances can run behind a load balancer.
+- **Connection pooling:** HikariCP with a fixed pool size per instance.
+- **Idempotent jobs:** billing runs and email sends can be retried or run twice without side effects.
+- **Outbox pattern:** emails are written to an `email_outbox` table and sent by a worker. Slow SMTP never blocks a request.
+- **Optimistic locking:** `@Version` on subscriptions and invoices to prevent lost updates.
+- **Pagination everywhere:** no endpoint returns unbounded lists.
+- **SQL aggregation for dashboards:** numbers come from the database, not from loops in Java.
+- **Batch processing:** billing processes subscriptions in chunks of 500 using keyset pagination.
+
+## Plans: the core of the system
+
+Plans are the most important design element. Prices change over time, but existing customers must keep their agreed prices. So the model separates the plan's identity from its versions.
+
+| Table | Purpose |
+|---|---|
+| `plans` | Identity: code, name, product, status (DRAFT, PUBLISHED, RETIRED) |
+| `plan_versions` | Price, billing cycle, minimum quantity, availability window, lifecycle flags, effective_from / effective_to |
+| `plan_limits` | Per-version limits: users, storage, API calls, custom domains, and so on |
+
+**Rules:**
+- Editing a published plan creates a **new plan version**. It never modifies the old one.
+- Subscriptions reference a **specific plan_version_id**, so changing a plan never changes an existing customer's price.
+- Billing cycle is one of DAILY, WEEKLY, MONTHLY, YEARLY.
+- Each version has these flags, set by the admin per plan:
+  - `auto_close`: closes automatically at the end of its window
+  - `allow_early_close`: can be closed before expiry
+  - `allow_pause`: subscriptions can be paused
+  - `allow_renewal`: subscriptions can be renewed
+- Only **ADMIN** can create, publish, or retire plans.
+- A plan can only be published when its availability window and price are valid.
+
+**Example:** Starter (monthly ₹499, 3 users, 10 GB) is version 1. The admin raises it to ₹549 in version 2. Customers on version 1 keep ₹499. New customers get version 2.
+
+## Discounts: admin only
+
+- **Only ADMIN** can create, edit, or deactivate discounts. Staff and customers can view applied discount lines on invoices but cannot change rules.
+- Each discount has: type (FIXED or PERCENT), value, scope (PRODUCT or SUBSCRIPTION), minimum amount or quantity, start and end dates, and a usage limit.
+- Applied discounts are stored as **`discount_redemptions`** (invoice, discount, amount), not as a counter. Usage is checked by locking the discount row (`SELECT … FOR UPDATE`) inside the invoice transaction, so the limit holds even under concurrent billing.
+- Every change to a discount is written to `audit_logs`.
+
+## Permissions
+
+| Capability | Admin | Staff | Customer |
+|---|---|---|---|
+| Manage products and variants | ✅ | ❌ | ❌ |
+| Manage plans and versions | ✅ | ❌ | ❌ |
+| Manage discounts | ✅ | ❌ | ❌ |
+| Create staff accounts | ✅ | ❌ | ❌ |
+| Manage tax rules | ✅ | ❌ | ❌ |
+| Manage customers | ✅ | ✅ | ❌ |
+| Manage subscriptions | ✅ | ✅ | Own only (request pause or renewal) |
+| Run billing | ✅ | ❌ | ❌ |
+| Confirm and cancel invoices | ✅ | ✅ | ❌ |
+| Record payments | ✅ | ✅ | ❌ |
+| View finance dashboard | ✅ | Limited | ❌ |
+| View own invoices and subscriptions | ✅ | ✅ | ✅ |
+| Chatbot and tickets | ✅ | Handle tickets | Own only |
+
+Enforced in two places: `@PreAuthorize` on the service methods, and route guards in the frontend. The frontend guard is for usability only. The backend is the real control.
+
+## Database schema (Flyway migrations)
+
+| Group | Tables |
+|---|---|
+| Identity | `users`, `password_resets`, `customers` |
+| Catalog | `products`, `product_variants` |
+| Plans | `plans`, `plan_versions`, `plan_limits`, `quotation_templates` |
+| Billing setup | `tax_rules`, `discounts`, `discount_redemptions` |
+| Subscriptions | `subscriptions`, `subscription_lines` |
+| Invoicing | `invoices`, `invoice_lines`, `invoice_sequence` |
+| Payments | `payments` |
+| Jobs | `job_runs`, `email_outbox` |
+| Support | `faq_articles`, `chat_sessions`, `chat_messages`, `support_tickets`, `ticket_comments` |
+| Audit | `audit_logs` |
+
+**Key constraints:**
+- `users.email` UNIQUE
+- `invoices(subscription_id, period_start)` UNIQUE: no double billing
+- `subscriptions.number` and `invoices.number` UNIQUE, generated from a sequence
+- `payments.amount > 0` CHECK
+- `discounts.used` is never stored; it is derived from `discount_redemptions`
+
+**Money:** stored as `BIGINT` paise. Tax in basis points. Rounding happens once per invoice line, using the same rule everywhere.
+
+**Indexes:** `subscriptions(status, customer_id)`, `subscriptions(expiry_date)`, `invoices(status, due_date)`, `payments(invoice_id)`, `discount_redemptions(discount_id)`, `chat_messages(session_id, created_at)`.
+
+## Status lifecycles
+
+**Subscription:** DRAFT → QUOTATION → CONFIRMED → ACTIVE → CLOSED
+- Pause is a flag, allowed only if the plan version has `allow_pause`.
+- Renewal extends `expiry_date`. It does not change status.
+
+**Invoice:** DRAFT → CONFIRMED → PAID, plus CANCELLED (only from DRAFT, or from CONFIRMED with no payments).
+- OVERDUE is derived: confirmed, unpaid, and past due date. It is not stored.
+
+**Ticket:** OPEN → IN_PROGRESS → RESOLVED.
+
+Transitions are enforced in one service class per module, not scattered across controllers.
+
+## Billing run
+
+`POST /api/billing/runs` (admin only, takes a date):
+1. Creates a `job_runs` row.
+2. Selects due subscriptions in chunks of 500 (keyset pagination).
+3. For each subscription, in its own transaction: builds the invoice, applies tax rules, applies eligible discounts (locking each discount row), and writes redemptions.
+4. The unique key on `(subscription_id, period_start)` makes re-runs create nothing new.
+5. Failures are logged per subscription. One bad record doesn't stop the run.
+6. The run result shows created, skipped, and failed counts.
+
+## Chatbot with Ollama
+
+**Model:** Qwen 2.5 7B or Llama 3.1 8B if you have 16 GB RAM. Use a 3B model on 8 GB machines.
+
+**Flow:**
+1. Customer message arrives. Intent is detected by rules first (keywords, FAQ matching).
+2. If the intent needs data, the backend fetches it **for the logged-in customer only**.
+3. For natural replies, the backend sends Ollama the matching FAQ text and the fetched facts, and asks for a short answer.
+4. If the answer is unclear, or the customer asks for a human, the bot creates a ticket with the full transcript.
+
+**Guardrails:**
+- The LLM never writes SQL and never has database access.
+- The LLM never sees other customers' data.
+- The LLM cannot change billing. Pause and renewal are *requests* that go to staff.
+- Ollama calls have a 5-second timeout. If Ollama is down, the bot answers with rules only.
+
+**Calling Ollama:** plain HTTP to `/api/chat` via Spring's `RestClient`. It's simpler and has fewer moving parts than adding a framework.
+
+## Frontend
+
+- **Routes by role:** Admin, Staff, and Customer each get their own layout and navigation.
+- **Pages:**
+  - Auth: sign up, login, forgot and reset password
+  - Admin: products, variants, plans and versions, discounts, tax rules, staff management
+  - Staff: customers, subscriptions, quotations, invoices, payments, support queue
+  - Customer: portal with own subscriptions, invoices, plan details, and the chat widget
+  - Finance: dashboard with KPI cards, revenue chart, overdue table, and filters
+- **Design references:**
+  - Finexy: dashboard layout, KPI cards, activity table with status badges
+  - Slingshot: stat card with trend, line and pie charts
+  - Compare plans: pricing cards with a recommended badge and feature matrix
+- **Shared components:** data table with server pagination, status badge, form fields with Zod validation, empty and error states.
+
+## Team roles
+
+Each person owns complete vertical slices, including their screens, API, and tests. Person 2 owns Flyway migrations, so schema changes go through one person.
+
+**Person 1: Frontend and UI/UX lead**
+- Design system from the three references: palette, cards, tables, badges, states.
+- Auth screens, role-based layouts and route guards.
+- Admin plan editor (versions, flags, limits) and discount manager.
+- Customer portal and chat widget (quick replies, "talk to a human," ticket card).
+- Staff support queue.
+- Finance dashboard UI.
+
+**Person 2: Platform, auth, and support**
+- Spring Boot scaffold, Maven build, Flyway setup, Docker Compose, global error handling, validation.
+- Auth: signup with the password rule (more than 8 characters, uppercase, lowercase, special character), unique email, JWT, refresh, forgot and reset with real SMTP through the outbox.
+- RBAC and method security. Only admins create staff.
+- Audit log module.
+- Chatbot core: sessions, rule-based intents, Ollama client, fallback, escalation to tickets.
+- Support tickets API.
+
+**Person 3: Plans, subscriptions, and billing (heaviest owner)**
+- Products, variants, plans, plan versions, plan limits, publish and retire logic.
+- Quotation templates with validity days and conversion to subscriptions.
+- Subscription state machine and pause, renewal, and early-close rules.
+- Tax rules.
+- Billing run job: chunked, idempotent, with a `job_runs` record.
+- Invoice confirm, cancel, and print view.
+
+**Person 4: Discounts, payments, reporting, and performance**
+- Discounts (admin only): rules, scopes, limits, and locking.
+- Automatic discount application at invoice creation, with redemptions.
+- Payment recording with partial payments; invoice becomes PAID when covered.
+- Overdue list with aging (0–30, 31–60, 60+ days).
+- Finance dashboard API: active subscriptions, MRR (yearly ÷ 12, weekly × 52 ÷ 12, daily × 365 ÷ 12), ARR, collected, outstanding, overdue. All in SQL.
+- Seed data: about 5,000 subscriptions, a few thousand invoices, FAQ articles, sample tickets.
+- Performance pass: every list and dashboard response under 2 seconds on seeded data.
+
+*Plan Advisor is a stretch goal for whoever finishes first.*
+
+## Timeline (7.5 hours)
+
+| Time | Work | Gate |
+|---|---|---|
+| 0:00–0:40 | Repo and Maven scaffold; Postgres running; Flyway schema v1; Ollama installed and model pulled; React shell; API contract agreed; SMTP tested | Everyone runs the stack locally |
+| 0:40–3:00 | Each person builds their slice against the contract | Login; create product, plan, and version |
+| 3:00 | **Gate 1:** signup → product → plan → quotation → subscription (DRAFT) | Fix blockers only |
+| 3:00–5:00 | Billing run, discounts, payments, dashboard API; chatbot intents and Ollama replies; UI wiring | Happy path works end to end |
+| 5:00 | **Feature freeze** | Bug fixes only |
+| 5:00–6:15 | Ticket escalation and support queue; seed 5,000 subscriptions; performance check; double-billing, partial-payment, discount-limit, and role tests | Demo script passes twice |
+| 6:15–7:15 | UI polish, empty and error states, README, run guide, Docker Compose check, demo rehearsal ×3 | Demo rehearsed |
+| 7:15–7:30 | Buffer | — |
+
+**Git:** protected `main`, one branch per person, PRs merged by Person 2. Commit every 30–45 minutes.
+
+## Demo script
+
+1. Sign up; show the password rule and the duplicate-email block.
+2. Admin creates a product with a variant (Odoo +560), then a plan and a published version.
+3. Admin edits the plan price; show that the existing subscription keeps the old version.
+4. Admin creates a percentage discount with a usage limit.
+5. Build a quotation, convert it to a subscription, confirm and activate.
+6. Run billing; invoices generate with taxes and the discount. **Run it again: zero new invoices.**
+7. Show that a staff user cannot open the discount screen or API.
+8. Record a partial payment, then the rest; invoice moves to PAID.
+9. Customer opens the chatbot: asks for invoice status, then requests a pause.
+10. Customer asks for a human; ticket is created; staff replies in the support queue.
+11. Finance dashboard: MRR, outstanding, overdue aging, filters.
+
+## Cut list (in order)
+
+1. Plan Advisor
+2. LLM replies in the chatbot (keep rule-based answers)
+3. Pricing page feature matrix (keep the cards)
+4. Audit log screen (keep the table)
+5. Chatbot history view
+6. Print styling beyond a basic view
+
+**Never cut:** auth and roles, plan versioning, admin-only discounts, billing run with idempotency, invoice states, payment recording, overdue and dashboard numbers, ticket escalation.
+
+## Risks
+
+- **Ollama is slow on a laptop.** Set the 5-second timeout and keep the rule-based fallback. Test Ollama on the demo machine by hour 1.
+- **Billing bugs.** Test duplicate runs, partial payments, and discount limits at Gate 2.
+- **Plan versioning mistakes.** Subscriptions must reference a version ID, never the plan itself. Check this in code review.
+- **Schema drift.** Only Person 2 merges migrations.
+- **Scope creep.** The feature freeze at 5:00 is firm.
+
+## Questions before the task files
+
+1. **RAM and laptop specs:** which Ollama model fits your machines? (8 GB → 3B model, 16 GB → 7B model.)
+2. **Hosting:** do you plan to deploy to a VM or cloud server after the hackathon, or is the demo local only? This decides whether the Docker Compose file needs a production profile.
+3. **AI coding tool:** which one does the team use? I'll tailor the task files and prompts to it.
+
+Reply with answers or say "go with defaults," and I'll produce the file-by-file task list for each person.
