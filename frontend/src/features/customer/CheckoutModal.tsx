@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plan, Customer } from '../../types';
+import { Plan, Customer, Discount } from '../../types';
 import { api } from '../../services/api';
 import { formatCurrency } from '../../utils/formatters';
 import { X, Check, ShieldCheck, Tag } from 'lucide-react';
@@ -25,14 +25,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     customers[0]?.id || 1
   );
   const [couponCode, setCouponCode] = useState('');
-  const [discountPercent, setDiscountPercent] = useState<number>(0);
+  const [appliedDiscount, setAppliedDiscount] = useState<Discount | null>(null);
   const [couponStatus, setCouponStatus] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
   const basePricePaise =
     billingCycle === 'YEARLY' ? plan.yearlyPricePaise : plan.monthlyPricePaise;
 
-  const discountAmountPaise = Math.round((basePricePaise * discountPercent) / 100);
+  let discountAmountPaise = 0;
+  if (appliedDiscount) {
+    if (appliedDiscount.discountType === 'PERCENT') {
+      discountAmountPaise = Math.round(basePricePaise * (appliedDiscount.value / 10000));
+    } else {
+      discountAmountPaise = Math.min(basePricePaise, appliedDiscount.value);
+    }
+  }
+
   const subtotalPaise = Math.max(0, basePricePaise - discountAmountPaise);
   const taxPaise = Math.round(subtotalPaise * 0.18);
   const totalPaise = subtotalPaise + taxPaise;
@@ -42,15 +50,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       const res = await api.validateDiscount(couponCode.trim());
       if (res && res.isActive) {
+        setAppliedDiscount(res);
         if (res.discountType === 'PERCENT') {
-          setDiscountPercent(res.value / 100); // 2000 bps -> 20%
           setCouponStatus(`Applied! ${res.value / 100}% off`);
         } else {
-          setDiscountPercent(15);
-          setCouponStatus(`Applied! Flat discount applied`);
+          setCouponStatus(`Applied! ${formatCurrency(res.value, currency)} flat discount`);
         }
+      } else {
+        setAppliedDiscount(null);
+        setCouponStatus('Coupon is inactive or expired');
       }
     } catch {
+      setAppliedDiscount(null);
       setCouponStatus('Invalid or expired coupon code');
     }
   };
@@ -176,7 +187,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             {discountAmountPaise > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '8px', color: 'var(--emerald-600)' }}>
-                <span>Discount ({discountPercent}%)</span>
+                <span>
+                  Discount ({appliedDiscount?.discountType === 'PERCENT' ? `${appliedDiscount.value / 100}%` : 'Flat'})
+                </span>
                 <span>-{formatCurrency(discountAmountPaise, currency)}</span>
               </div>
             )}
