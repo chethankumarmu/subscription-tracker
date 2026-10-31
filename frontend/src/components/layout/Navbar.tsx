@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Sparkles } from 'lucide-react';
+import { Search, Bell } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
