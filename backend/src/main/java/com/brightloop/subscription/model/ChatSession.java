@@ -82,3 +82,4 @@ public class ChatSession {
     public Long getTicketId() { return ticketId; }
     public void setTicketId(Long ticketId) { this.ticketId = ticketId; }
 }
+

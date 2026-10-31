@@ -46,3 +46,4 @@ public class SupportController {
         return ResponseEntity.ok(supportChatbotService.updateTicketStatus(id, status));
     }
 }
+

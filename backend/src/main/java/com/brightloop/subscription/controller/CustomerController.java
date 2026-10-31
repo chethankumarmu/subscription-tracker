@@ -23,3 +23,4 @@ public class CustomerController {
         return ResponseEntity.ok(customerRepository.findAll());
     }
 }
+

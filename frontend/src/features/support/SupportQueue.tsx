@@ -188,3 +188,4 @@ export const SupportQueue: React.FC<SupportQueueProps> = ({ onNotification }) =>
     </div>
   );
 };
+

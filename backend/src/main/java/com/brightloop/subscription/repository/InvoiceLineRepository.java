@@ -10,3 +10,4 @@ import java.util.List;
 public interface InvoiceLineRepository extends JpaRepository<InvoiceLine, Long> {
     List<InvoiceLine> findByInvoiceId(Long invoiceId);
 }
+

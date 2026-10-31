@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
 
-@Service
+@Service("apiSubscriptionService")
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
@@ -21,6 +21,7 @@ public class SubscriptionService {
     private final TaxRuleRepository taxRuleRepository;
     private final InvoiceRepository invoiceRepository;
     private final InvoiceLineRepository invoiceLineRepository;
+    private final UserRepository userRepository;
 
     public SubscriptionService(
             SubscriptionRepository subscriptionRepository,
@@ -31,7 +32,8 @@ public class SubscriptionService {
             ProductRepository productRepository,
             TaxRuleRepository taxRuleRepository,
             InvoiceRepository invoiceRepository,
-            InvoiceLineRepository invoiceLineRepository
+            InvoiceLineRepository invoiceLineRepository,
+            UserRepository userRepository
     ) {
         this.subscriptionRepository = subscriptionRepository;
         this.subscriptionLineRepository = subscriptionLineRepository;
@@ -42,6 +44,15 @@ public class SubscriptionService {
         this.taxRuleRepository = taxRuleRepository;
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineRepository = invoiceLineRepository;
+        this.userRepository = userRepository;
+    }
+
+    private Long getStaffOrAdminUserId() {
+        return userRepository.findAll().stream()
+                .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()) || "STAFF".equalsIgnoreCase(u.getRole()))
+                .map(User::getId)
+                .findFirst()
+                .orElseGet(() -> userRepository.findAll().stream().findFirst().map(User::getId).orElse(null));
     }
 
     @Transactional(readOnly = true)
@@ -108,7 +119,7 @@ public class SubscriptionService {
                         ? LocalDate.now().plusYears(1)
                         : LocalDate.now().plusMonths(1))
                 .paymentTermsDays(30)
-                .createdBy(1L)
+                .createdBy(getStaffOrAdminUserId())
                 .build());
 
         // Line

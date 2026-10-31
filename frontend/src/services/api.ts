@@ -100,3 +100,4 @@ export const api = {
   // Customers
   getCustomers: () => fetchJson<Customer[]>('/customers'),
 };
+

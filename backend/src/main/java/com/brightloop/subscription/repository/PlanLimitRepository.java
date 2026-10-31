@@ -10,3 +10,4 @@ import java.util.List;
 public interface PlanLimitRepository extends JpaRepository<PlanLimit, Long> {
     List<PlanLimit> findByPlanVersionId(Long planVersionId);
 }
+

@@ -197,3 +197,4 @@ export const Activity: React.FC<ActivityProps> = ({
     </div>
   );
 };
+

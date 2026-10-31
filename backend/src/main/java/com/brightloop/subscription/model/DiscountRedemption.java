@@ -50,3 +50,4 @@ public class DiscountRedemption {
     public OffsetDateTime getRedeemedAt() { return redeemedAt; }
     public void setRedeemedAt(OffsetDateTime redeemedAt) { this.redeemedAt = redeemedAt; }
 }
+

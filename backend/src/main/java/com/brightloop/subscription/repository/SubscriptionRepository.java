@@ -14,3 +14,4 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     List<Subscription> findByStatus(String status);
     List<Subscription> findAllByOrderByCreatedAtDesc();
 }
+

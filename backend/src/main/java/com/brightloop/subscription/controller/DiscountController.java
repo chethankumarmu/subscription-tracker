@@ -49,3 +49,4 @@ public class DiscountController {
         return ResponseEntity.ok(discountRepository.save(d));
     }
 }
+

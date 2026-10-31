@@ -660,3 +660,4 @@ public class DataSeeder implements CommandLineRunner {
         log.info("Database seeding successfully completed with 27-table aligned data!");
     }
 }
+

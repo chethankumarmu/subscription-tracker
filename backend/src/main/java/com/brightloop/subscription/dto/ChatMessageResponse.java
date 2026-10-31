@@ -71,3 +71,4 @@ public class ChatMessageResponse {
     public OffsetDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(OffsetDateTime timestamp) { this.timestamp = timestamp; }
 }
+

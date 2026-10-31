@@ -19,6 +19,7 @@ public class SupportChatbotService {
     private final SupportTicketRepository supportTicketRepository;
     private final TicketCommentRepository ticketCommentRepository;
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
 
     public SupportChatbotService(
             FaqArticleRepository faqArticleRepository,
@@ -26,7 +27,8 @@ public class SupportChatbotService {
             ChatMessageRepository chatMessageRepository,
             SupportTicketRepository supportTicketRepository,
             TicketCommentRepository ticketCommentRepository,
-            CustomerRepository customerRepository
+            CustomerRepository customerRepository,
+            UserRepository userRepository
     ) {
         this.faqArticleRepository = faqArticleRepository;
         this.chatSessionRepository = chatSessionRepository;
@@ -34,6 +36,15 @@ public class SupportChatbotService {
         this.supportTicketRepository = supportTicketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
         this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
+    }
+
+    private Long getStaffOrAdminUserId() {
+        return userRepository.findAll().stream()
+                .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()) || "STAFF".equalsIgnoreCase(u.getRole()))
+                .map(User::getId)
+                .findFirst()
+                .orElseGet(() -> userRepository.findAll().stream().findFirst().map(User::getId).orElse(null));
     }
 
     @Transactional
@@ -80,9 +91,10 @@ public class SupportChatbotService {
             session.setTicketId(ticket.getId());
             chatSessionRepository.save(session);
 
+            Long staffUserId = getStaffOrAdminUserId();
             ticketCommentRepository.save(TicketComment.builder()
                     .ticketId(ticket.getId())
-                    .authorId(1L)
+                    .authorId(staffUserId != null ? staffUserId : session.getUserId())
                     .body("Escalated from chatbot session #" + session.getId() + ". User inquiry: " + req.getMessage())
                     .isInternal(true)
                     .build());
@@ -154,9 +166,14 @@ public class SupportChatbotService {
     }
 
     private ChatSession createNewSession(Long customerId) {
+        Long custId = customerId != null ? customerId : 1L;
+        Long userId = customerRepository.findById(custId)
+                .map(Customer::getUserId)
+                .orElseGet(this::getStaffOrAdminUserId);
+
         return chatSessionRepository.save(ChatSession.builder()
-                .customerId(customerId != null ? customerId : 1L)
-                .userId(1L)
+                .customerId(custId)
+                .userId(userId)
                 .status("BOT")
                 .startedAt(OffsetDateTime.now())
                 .build());

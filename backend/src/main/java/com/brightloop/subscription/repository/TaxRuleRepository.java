@@ -10,3 +10,4 @@ import java.util.List;
 public interface TaxRuleRepository extends JpaRepository<TaxRule, Long> {
     List<TaxRule> findByIsActiveTrue();
 }
+

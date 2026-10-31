@@ -288,3 +288,4 @@ export const InvoiceDrawer: React.FC<InvoiceDrawerProps> = ({
     </div>
   );
 };
+

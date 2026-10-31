@@ -10,3 +10,4 @@ import java.util.List;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByStatus(String status);
 }
+

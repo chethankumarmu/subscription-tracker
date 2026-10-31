@@ -383,3 +383,4 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
     </div>
   );
 };
+

@@ -270,3 +270,4 @@ public class DashboardStatsDto {
     public SpendingLimit getSpendingLimit() { return spendingLimit; }
     public void setSpendingLimit(SpendingLimit spendingLimit) { this.spendingLimit = spendingLimit; }
 }
+

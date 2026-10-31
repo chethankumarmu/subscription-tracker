@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { ToastContainer, ToastMessage } from './components/ui/Toast';
@@ -11,27 +11,32 @@ import { SupportQueue } from './features/support/SupportQueue';
 import { ChatbotDrawer } from './features/chatbot/ChatbotDrawer';
 
 export default function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const addNotification = (title: string, message?: string, type: 'success' | 'error' | 'info' = 'success') => {
-    const id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
-    setToasts((prev) => [...prev, { id, title, message, type }]);
+  const handleNotify = (title: string, message?: string, type: 'success' | 'error' | 'info' = 'success') => {
+    const newToast: ToastMessage = {
+      id: `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      type,
+      title,
+      message,
+    };
+    setToasts((prev) => [...prev, newToast]);
   };
 
-  const removeToast = (id: string) => {
+  const handleDismissToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   return (
     <div className="app-container">
-      {/* Floating Vertical Sidebar */}
+      {/* Floating Vertical Icon Sidebar */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -39,21 +44,21 @@ export default function App() {
         setTheme={setTheme}
       />
 
-      {/* Floating Top Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        currency={currency}
-        setCurrency={setCurrency}
-      />
+      <div className="main-content">
+        {/* Floating Topbar */}
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          currency={currency}
+          setCurrency={setCurrency}
+        />
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        <div className="page-wrapper">
+        {/* Dynamic Page Views */}
+        <main className="page-wrapper">
           {activeTab === 'overview' && (
             <Overview
               currency={currency}
-              onNotification={addNotification}
+              onNotification={handleNotify}
               onNavigateToPricing={() => setActiveTab('pricing')}
             />
           )}
@@ -61,21 +66,21 @@ export default function App() {
           {activeTab === 'activity' && (
             <Activity
               currency={currency}
-              onNotification={addNotification}
+              onNotification={handleNotify}
             />
           )}
 
           {activeTab === 'pricing' && (
             <PricingMatrix
               currency={currency}
-              onNotification={addNotification}
+              onNotification={handleNotify}
             />
           )}
 
           {activeTab === 'manage' && (
             <Manage
               currency={currency}
-              onNotification={addNotification}
+              onNotification={handleNotify}
               onNavigateToPricing={() => setActiveTab('pricing')}
             />
           )}
@@ -83,23 +88,23 @@ export default function App() {
           {activeTab === 'discounts' && (
             <Discounts
               currency={currency}
-              onNotification={addNotification}
+              onNotification={handleNotify}
             />
           )}
 
           {activeTab === 'support' && (
             <SupportQueue
-              onNotification={addNotification}
+              onNotification={handleNotify}
             />
           )}
-        </div>
-      </main>
+        </main>
+      </div>
 
-      {/* Floating AI Support Chatbot */}
-      <ChatbotDrawer onNotification={addNotification} />
+      {/* Floating Support Chatbot Drawer with PostgreSQL Knowledge Base */}
+      <ChatbotDrawer onNotification={handleNotify} />
 
-      {/* Toast Notification Container */}
-      <ToastContainer toasts={toasts} onDismiss={removeToast} />
+      {/* Real-time Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={handleDismissToast} />
     </div>
   );
 }

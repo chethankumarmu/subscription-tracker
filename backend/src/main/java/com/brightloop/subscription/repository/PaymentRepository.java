@@ -15,3 +15,4 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COALESCE(SUM(p.amountPaise), 0) FROM Payment p")
     Long sumAllPayments();
 }
+

@@ -11,3 +11,4 @@ public interface FaqArticleRepository extends JpaRepository<FaqArticle, Long> {
     List<FaqArticle> findByIsPublishedTrue();
     List<FaqArticle> findByCategoryAndIsPublishedTrue(String category);
 }
+

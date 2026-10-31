@@ -11,3 +11,4 @@ public interface DiscountRedemptionRepository extends JpaRepository<DiscountRede
     List<DiscountRedemption> findByInvoiceId(Long invoiceId);
     List<DiscountRedemption> findBySubscriptionId(Long subscriptionId);
 }
+

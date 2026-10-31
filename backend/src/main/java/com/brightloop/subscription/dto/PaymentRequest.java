@@ -28,3 +28,4 @@ public class PaymentRequest {
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
 }
+

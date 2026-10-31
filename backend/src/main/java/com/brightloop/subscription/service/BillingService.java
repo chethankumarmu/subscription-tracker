@@ -16,17 +16,28 @@ public class BillingService {
     private final InvoiceLineRepository invoiceLineRepository;
     private final PaymentRepository paymentRepository;
     private final CustomerRepository customerRepository;
+    private final UserRepository userRepository;
 
     public BillingService(
             InvoiceRepository invoiceRepository,
             InvoiceLineRepository invoiceLineRepository,
             PaymentRepository paymentRepository,
-            CustomerRepository customerRepository
+            CustomerRepository customerRepository,
+            UserRepository userRepository
     ) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceLineRepository = invoiceLineRepository;
         this.paymentRepository = paymentRepository;
         this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
+    }
+
+    private Long getStaffOrAdminUserId() {
+        return userRepository.findAll().stream()
+                .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()) || "STAFF".equalsIgnoreCase(u.getRole()))
+                .map(User::getId)
+                .findFirst()
+                .orElseGet(() -> userRepository.findAll().stream().findFirst().map(User::getId).orElse(1L));
     }
 
     @Transactional(readOnly = true)
@@ -94,7 +105,7 @@ public class BillingService {
                         ? req.getReference()
                         : "TXN_" + System.currentTimeMillis() % 1000000)
                 .note(req.getNote())
-                .recordedBy(1L)
+                .recordedBy(getStaffOrAdminUserId())
                 .build());
 
         long newAmountPaid = inv.getAmountPaidPaise() + req.getAmountPaise();

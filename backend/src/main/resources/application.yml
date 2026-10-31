@@ -1,10 +1,12 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: subscription-platform
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/brightloop}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/brightlook}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:583218}
+    password: ${SPRING_DATASOURCE_PASSWORD:Ninja#@3.14}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -40,3 +42,4 @@ app:
     base-url: "http://localhost:11434"
     model: "qwen2.5:3b"
     timeout-ms: 5000
+

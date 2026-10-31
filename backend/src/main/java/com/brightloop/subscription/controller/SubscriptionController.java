@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-@RestController
+@RestController("apiSubscriptionController")
 @RequestMapping("/api/subscriptions")
 @CrossOrigin(origins = "*")
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
-    public SubscriptionController(SubscriptionService subscriptionService) {
+    public SubscriptionController(@org.springframework.beans.factory.annotation.Qualifier("apiSubscriptionService") SubscriptionService subscriptionService) {
         this.subscriptionService = subscriptionService;
     }
 

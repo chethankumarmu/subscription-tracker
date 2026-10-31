@@ -10,3 +10,4 @@ import java.util.List;
 public interface SubscriptionLineRepository extends JpaRepository<SubscriptionLine, Long> {
     List<SubscriptionLine> findBySubscriptionId(Long subscriptionId);
 }
+

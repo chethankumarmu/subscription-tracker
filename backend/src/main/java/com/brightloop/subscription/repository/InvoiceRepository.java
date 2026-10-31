@@ -26,3 +26,4 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT i FROM Invoice i WHERE i.issueDate BETWEEN :startDate AND :endDate")
     List<Invoice> findInvoicesInPeriod(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }
+

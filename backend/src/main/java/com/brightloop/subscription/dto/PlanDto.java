@@ -90,3 +90,4 @@ public class PlanDto {
     public Map<String, Object> getFeatureMap() { return featureMap; }
     public void setFeatureMap(Map<String, Object> featureMap) { this.featureMap = featureMap; }
 }
+

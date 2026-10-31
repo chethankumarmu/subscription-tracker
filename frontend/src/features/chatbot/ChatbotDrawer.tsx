@@ -354,3 +354,4 @@ export const ChatbotDrawer: React.FC<ChatbotDrawerProps> = ({ onNotification }) 
     </>
   );
 };
+

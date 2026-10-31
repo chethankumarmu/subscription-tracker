@@ -38,3 +38,4 @@ public class DiscountRequest {
     public OffsetDateTime getEndsAt() { return endsAt; }
     public void setEndsAt(OffsetDateTime endsAt) { this.endsAt = endsAt; }
 }
+

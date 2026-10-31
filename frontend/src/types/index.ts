@@ -183,3 +183,4 @@ export interface ChatMessage {
   escalated?: boolean;
   ticketNumber?: string;
 }
+

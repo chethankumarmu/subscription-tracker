@@ -57,3 +57,4 @@ public class PlanLimit {
     public Long getLimitValue() { return limitValue; }
     public void setLimitValue(Long limitValue) { this.limitValue = limitValue; }
 }
+
