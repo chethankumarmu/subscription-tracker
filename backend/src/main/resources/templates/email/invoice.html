@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Invoice</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1f2937;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .invoice-box {
+            max-width: 640px;
+            margin: auto;
+            border: 1px solid #e5e7eb;
+            padding: 24px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 12px;
+        }
+        .brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        .invoice-title {
+            text-align: right;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .invoice-number {
+            text-align: right;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .two-column {
+            width: 100%;
+            margin-bottom: 24px;
+        }
+        .two-column td {
+            vertical-align: top;
+            width: 50%;
+        }
+        .section-heading {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+        .items-table th {
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 12px;
+        }
+        .items-table td {
+            border: 1px solid #e5e7eb;
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+        .items-table tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .totals-table {
+            width: 260px;
+            margin-left: auto;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .totals-table td {
+            padding: 5px 8px;
+            font-size: 13px;
+        }
+        .totals-table .total-row td {
+            border-top: 2px solid #2563eb;
+            font-size: 15px;
+            font-weight: bold;
+            color: #1e3a8a;
+            background-color: #eff6ff;
+        }
+        .footer {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 12px;
+            text-align: center;
+            font-size: 11px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+<div class="invoice-box">
+    <!-- Header -->
+    <table class="header-table">
+        <tr>
+            <td class="brand">Brightloop</td>
+            <td>
+                <div class="invoice-title">INVOICE</div>
+                <div class="invoice-number" th:text="${invoiceNumber}">INV-2026-000001</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Two-column block -->
+    <table class="two-column">
+        <tr>
+            <td>
+                <div class="section-heading">Bill To</div>
+                <div style="font-weight: bold;" th:text="${customerName}">Customer Name</div>
+                <div th:if="${companyName != null and !companyName.isEmpty()}" th:text="${companyName}">Company Name</div>
+                <div th:text="${billingAddress}">Billing Address</div>
+            </td>
+            <td>
+                <div class="section-heading">Invoice Details</div>
+                <div><strong>Issue Date:</strong> <span th:text="${issueDate}">2026-10-31</span></div>
+                <div><strong>Due Date:</strong> <span th:text="${dueDate}">2026-11-30</span></div>
+                <div><strong>Subscription:</strong> <span th:text="${subscriptionNumber}">SUB-2026-000001</span></div>
+                <div><strong>Payment Status:</strong> <span th:text="${paymentStatus}">CONFIRMED</span></div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Line items table -->
+    <table class="items-table">
+        <thead>
+        <tr>
+            <th>Description</th>
+            <th class="text-center" style="width: 50px;">Qty</th>
+            <th class="text-right" style="width: 100px;">Unit price</th>
+            <th class="text-right" style="width: 90px;">Tax</th>
+            <th class="text-right" style="width: 100px;">Amount</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${items}">
+            <td th:text="${item.description}">Item description</td>
+            <td class="text-center" th:text="${item.quantity}">1</td>
+            <td class="text-right" th:text="${item.unitPriceFormatted}">₹1,499.00</td>
+            <td class="text-right" th:text="${item.taxFormatted}">₹0.00</td>
+            <td class="text-right" th:text="${item.amountFormatted}">₹1,499.00</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Totals block right-aligned -->
+    <table class="totals-table">
+        <tr>
+            <td>Subtotal:</td>
+            <td class="text-right" th:text="${subtotalFormatted}">₹1,499.00</td>
+        </tr>
+        <tr>
+            <td>Discount:</td>
+            <td class="text-right" th:text="${discountFormatted}">₹0.00</td>
+        </tr>
+        <tr>
+            <td>Tax:</td>
+            <td class="text-right" th:text="${taxFormatted}">₹0.00</td>
+        </tr>
+        <tr class="total-row">
+            <td>Total:</td>
+            <td class="text-right" th:text="${totalFormatted}">₹1,499.00</td>
+        </tr>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+        Payment is due by the due date shown above. Questions? Contact support@brightloop.test.
+    </div>
+</div>
+</body>
+</html>

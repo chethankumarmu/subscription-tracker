@@ -80,3 +80,32 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## 📧 Renewal Reminders & Email Outbox
+
+### 1. Trigger the Reminder Job Immediately (ADMIN only)
+```bash
+curl -X POST http://localhost:8080/api/admin/jobs/reminders \
+  -u admin@brightloop.test:password
+```
+
+### 2. Renew a Subscription
+```bash
+curl -X POST http://localhost:8080/api/subscriptions/1/renew \
+  -u cust@brightloop.test:password
+```
+
+### 3. Activate a Subscription (Generates First Invoice + PDF Email)
+```bash
+curl -X POST http://localhost:8080/api/subscriptions/1/activate \
+  -u admin@brightloop.test:password
+```
+
+### 4. Check Email Outbox in Database
+Verify the queued, sent, and failed emails:
+```sql
+SELECT status, attempts, last_error FROM email_outbox ORDER BY id DESC;
+```
+
