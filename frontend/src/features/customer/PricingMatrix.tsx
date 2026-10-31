@@ -64,32 +64,45 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
     );
   }
 
+  const starterPlan = plans.find((p) => p.code.toUpperCase().includes('STARTER')) || plans[0];
+  const proPlan = plans.find((p) => p.code.toUpperCase().includes('PRO')) || plans[1] || plans[0];
+  const enterprisePlan = plans.find((p) => p.code.toUpperCase().includes('ENTERPRISE')) || plans[2] || plans[0];
+
   return (
     <div>
-      {/* Header section matching Image 1 */}
-      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1
-          style={{
-            fontSize: '36px',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            marginBottom: '12px',
-          }}
-        >
-          Compare Plans with Clarity
-        </h1>
-        <p
-          style={{
-            fontSize: '16px',
-            color: 'var(--text-secondary)',
-            maxWidth: '600px',
-            margin: '0 auto 28px',
-          }}
-        >
-          Choose a transparent plan that seamlessly scales with your team's workflow and recurring billing.
-        </p>
+      {/* Header section matching Image 1: Compare plans with clarity */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '36px',
+          flexWrap: 'wrap',
+          gap: '20px',
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: '34px',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              marginBottom: '8px',
+            }}
+          >
+            Compare plans with clarity
+          </h1>
+          <p
+            style={{
+              fontSize: '15px',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            A polished feature matrix for SaaS pricing, service tiers, package comparisons, and premium offers.
+          </p>
+        </div>
 
-        {/* Monthly / Yearly Toggle */}
+        {/* Monthly / Yearly Toggle matching Image 1 */}
         <div
           style={{
             display: 'inline-flex',
@@ -105,8 +118,8 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
             onClick={() => setBillingCycle('MONTHLY')}
             style={{
               border: 'none',
-              background: billingCycle === 'MONTHLY' ? 'var(--indigo-500)' : 'transparent',
-              color: billingCycle === 'MONTHLY' ? '#ffffff' : 'var(--text-secondary)',
+              background: billingCycle === 'MONTHLY' ? 'var(--text-primary)' : 'transparent',
+              color: billingCycle === 'MONTHLY' ? 'var(--bg-card)' : 'var(--text-secondary)',
               padding: '8px 22px',
               borderRadius: 'var(--radius-pill)',
               fontWeight: 600,
@@ -121,8 +134,8 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
             onClick={() => setBillingCycle('YEARLY')}
             style={{
               border: 'none',
-              background: billingCycle === 'YEARLY' ? 'var(--indigo-500)' : 'transparent',
-              color: billingCycle === 'YEARLY' ? '#ffffff' : 'var(--text-secondary)',
+              background: billingCycle === 'YEARLY' ? 'var(--text-primary)' : 'transparent',
+              color: billingCycle === 'YEARLY' ? 'var(--bg-card)' : 'var(--text-secondary)',
               padding: '8px 22px',
               borderRadius: 'var(--radius-pill)',
               fontWeight: 600,
@@ -135,317 +148,388 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
             }}
           >
             Yearly
-            <span
-              style={{
-                background: billingCycle === 'YEARLY' ? '#ffffff' : 'var(--emerald-50)',
-                color: billingCycle === 'YEARLY' ? 'var(--indigo-600)' : 'var(--emerald-600)',
-                fontSize: '10px',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 'var(--radius-pill)',
-              }}
-            >
-              SAVE 20%
-            </span>
           </button>
         </div>
       </div>
 
-      {/* 3 Plan Cards matching Image 1 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '28px',
-          marginBottom: '56px',
-        }}
-      >
-        {plans.map((plan) => {
-          const isPro = plan.code.toUpperCase().includes('PRO');
-          const isStarter = plan.code.toUpperCase().includes('STARTER');
-          const pricePaise = getPrice(plan);
+      {/* Top 4-Column Cards Row matching Image 1: Features | Starter | Pro | Enterprise */}
+      <div className="pricing-matrix-grid" style={{ marginBottom: '24px' }}>
+        {/* Card 1: Features Anchor Card */}
+        <div
+          className="card"
+          style={{
+            padding: '32px 28px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            background: 'var(--bg-card)',
+            borderRadius: '24px',
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px', letterSpacing: '-0.02em' }}>
+              Features
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              Compare what each plan unlocks at a glance.
+            </p>
+          </div>
+        </div>
 
-          return (
-            <div
-              key={plan.id}
-              className="card"
-              style={{
-                padding: '36px 32px',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                borderColor: isPro ? 'var(--indigo-500)' : 'var(--border-color)',
-                boxShadow: isPro ? 'var(--shadow-violet-glow)' : 'var(--shadow-card)',
-                transform: isPro ? 'scale(1.02)' : 'none',
-              }}
-            >
-              {/* Recommended Badge for Pro */}
-              {isPro && (
-                <div
+        {/* Card 2: Starter Card matching Image 1 */}
+        {starterPlan && (
+          <div
+            className="card"
+            style={{
+              padding: '32px 28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              borderRadius: '24px',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 800 }}>{starterPlan.name}</h3>
+                <span
                   style={{
-                    position: 'absolute',
-                    top: '-14px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'linear-gradient(135deg, var(--indigo-500), var(--violet-600))',
-                    color: '#ffffff',
-                    fontSize: '11px',
+                    background: 'var(--violet-50)',
+                    color: 'var(--indigo-600)',
+                    fontSize: '10px',
                     fontWeight: 800,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    padding: '4px 16px',
+                    letterSpacing: '0.05em',
+                    padding: '3px 10px',
                     borderRadius: 'var(--radius-pill)',
-                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
                   }}
                 >
-                  <Sparkles size={12} /> Recommended
-                </div>
-              )}
+                  FREE
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                For personal projects
+              </p>
 
-              <div>
-                <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>
-                  {plan.name}
-                </h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-                  {isStarter
-                    ? 'Perfect for startups and individual experiments.'
-                    : isPro
-                    ? 'Best for fast-growing companies and multi-user teams.'
-                    : 'For enterprises requiring dedicated infrastructure and SLAs.'}
-                </p>
-
-                {/* Price Display */}
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '28px' }}>
-                  <span style={{ fontSize: '38px', fontWeight: 800, letterSpacing: '-0.03em' }}>
-                    {pricePaise === 0 ? 'Free' : formatCurrency(pricePaise, currency, false)}
-                  </span>
-                  {pricePaise > 0 && (
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                      /{billingCycle === 'YEARLY' ? 'year' : 'month'}
-                    </span>
-                  )}
-                </div>
-
-                {/* Top Features */}
-                <ul style={{ listStyle: 'none', padding: 0, marginBottom: '32px' }}>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', marginBottom: '12px' }}>
-                    <Check size={16} color="var(--emerald-500)" />
-                    <span>
-                      {plan.featureMap?.projects === -1
-                        ? 'Unlimited Projects'
-                        : `${plan.featureMap?.projects || 3} Projects included`}
-                    </span>
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', marginBottom: '12px' }}>
-                    <Check size={16} color="var(--emerald-500)" />
-                    <span>{plan.featureMap?.storage_gb || 5} GB Cloud NVMe Storage</span>
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', marginBottom: '12px' }}>
-                    <Check size={16} color="var(--emerald-500)" />
-                    <span>
-                      {plan.featureMap?.custom_domains === 0
-                        ? 'No custom domains'
-                        : plan.featureMap?.custom_domains === -1
-                        ? 'Unlimited Custom Domains'
-                        : `${plan.featureMap?.custom_domains} Custom Domains`}
-                    </span>
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', marginBottom: '12px' }}>
-                    <Check size={16} color="var(--emerald-500)" />
-                    <span>{isStarter ? 'Basic Library' : isPro ? 'Pro Library (50+)' : 'Full Enterprise Library'}</span>
-                  </li>
-                </ul>
+              {/* Price */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
+                <span style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-0.03em' }}>
+                  $0
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>/mo</span>
               </div>
 
-              {/* Action Button */}
-              <button
-                onClick={() => setSelectedPlanForCheckout(plan)}
-                className={isPro ? 'btn-primary' : 'btn-secondary'}
-                style={{ width: '100%', padding: '12px', fontSize: '14px' }}
-              >
-                {isStarter ? 'Get Started Free' : isPro ? 'Choose Pro' : 'Choose Enterprise'}
-              </button>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '28px' }}>
+                Perfect for trying the product, shipping a first project, and exploring the basics.
+              </p>
             </div>
-          );
-        })}
+
+            <button
+              onClick={() => setSelectedPlanForCheckout(starterPlan)}
+              className="btn-secondary"
+              style={{ width: '100%', padding: '12px', fontSize: '13px', justifyContent: 'center' }}
+            >
+              Start Free
+            </button>
+          </div>
+        )}
+
+        {/* Card 3: Pro Card (Recommended) matching Image 1 */}
+        {proPlan && (
+          <div
+            className="card"
+            style={{
+              padding: '32px 28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              borderRadius: '24px',
+              position: 'relative',
+              border: '2px solid rgba(124, 58, 237, 0.6)',
+              boxShadow: 'var(--shadow-violet-glow)',
+              background: 'linear-gradient(180deg, rgba(245, 243, 255, 0.8) 0%, var(--bg-card) 40%)',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 800 }}>{proPlan.name}</h3>
+                <span
+                  style={{
+                    background: 'linear-gradient(135deg, var(--indigo-500), var(--violet-600))',
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    letterSpacing: '0.05em',
+                    padding: '3px 10px',
+                    borderRadius: 'var(--radius-pill)',
+                  }}
+                >
+                  RECOMMENDED
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                For growing teams
+              </p>
+
+              {/* Price */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
+                <span style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--indigo-600)' }}>
+                  {currency === 'USD' ? '$29' : formatCurrency(getPrice(proPlan), 'INR', false)}
+                </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  /{billingCycle === 'YEARLY' ? 'yr' : 'mo'}
+                </span>
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '28px' }}>
+                Best for serious use with automation, collaboration, analytics, and priority support.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSelectedPlanForCheckout(proPlan)}
+              className="btn-primary"
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '13px',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
+              }}
+            >
+              Choose Pro
+            </button>
+          </div>
+        )}
+
+        {/* Card 4: Enterprise Card matching Image 1 */}
+        {enterprisePlan && (
+          <div
+            className="card"
+            style={{
+              padding: '32px 28px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              borderRadius: '24px',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 800 }}>{enterprisePlan.name}</h3>
+                <span
+                  style={{
+                    background: 'var(--violet-50)',
+                    color: 'var(--indigo-600)',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    letterSpacing: '0.05em',
+                    padding: '3px 10px',
+                    borderRadius: 'var(--radius-pill)',
+                  }}
+                >
+                  CUSTOM
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                For advanced organizations
+              </p>
+
+              {/* Price */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
+                <span style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-0.03em' }}>
+                  Custom
+                </span>
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4', marginBottom: '28px' }}>
+                Security, governance, onboarding, and custom limits tailored for larger businesses.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSelectedPlanForCheckout(enterprisePlan)}
+              className="btn-secondary"
+              style={{ width: '100%', padding: '12px', fontSize: '13px', justifyContent: 'center' }}
+            >
+              Talk to Sales
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Comparison Matrix Table matching Image 1 */}
-      <div className="card" style={{ padding: '32px', overflowX: 'auto' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '24px', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+      {/* CORE FEATURES Section Pill Banner matching Image 1 */}
+      <div
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-pill)',
+          padding: '12px 28px',
+          marginBottom: '16px',
+        }}
+      >
+        <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
           CORE FEATURES
-        </h3>
+        </span>
+      </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <th style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                Feature Breakdown
-              </th>
-              {plans.map((p) => (
-                <th key={p.id} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, textAlign: 'center' }}>
-                  {p.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Active Projects</td>
-              {plans.map((p) => (
-                <td
-                  key={p.id}
-                  style={{
-                    padding: '16px',
-                    fontSize: '13px',
-                    textAlign: 'center',
-                    fontWeight: p.featureMap?.projects === -1 ? 600 : 500,
-                    color: p.featureMap?.projects === -1 ? 'var(--indigo-500)' : 'inherit',
-                  }}
-                >
-                  {p.featureMap?.projects === -1 ? 'Unlimited' : `${p.featureMap?.projects ?? 3} Projects`}
-                </td>
-              ))}
-            </tr>
-            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Cloud Storage</td>
-              {plans.map((p) => (
-                <td
-                  key={p.id}
-                  style={{
-                    padding: '16px',
-                    fontSize: '13px',
-                    textAlign: 'center',
-                    fontWeight: (p.featureMap?.storage_gb || 0) >= 50 ? 600 : 500,
-                    color: (p.featureMap?.storage_gb || 0) >= 50 ? 'var(--indigo-500)' : 'inherit',
-                  }}
-                >
-                  {p.featureMap?.storage_gb === -1 ? 'Unlimited' : `${p.featureMap?.storage_gb ?? 5} GB NVMe`}
-                </td>
-              ))}
-            </tr>
-            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Custom Domains</td>
-              {plans.map((p) => (
-                <td
-                  key={p.id}
-                  style={{
-                    padding: '16px',
-                    fontSize: '13px',
-                    textAlign: 'center',
-                    color: !p.featureMap?.custom_domains ? 'var(--text-muted)' : 'inherit',
-                    fontWeight: (p.featureMap?.custom_domains || 0) > 0 ? 600 : 400,
-                  }}
-                >
-                  {!p.featureMap?.custom_domains
-                    ? '—'
-                    : p.featureMap?.custom_domains === -1
-                    ? 'Unlimited'
-                    : `${p.featureMap?.custom_domains} Domains`}
-                </td>
-              ))}
-            </tr>
-            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Template Library</td>
-              {plans.map((p) => {
-                const tmpl = p.featureMap?.templates ?? 10;
-                const isFull = tmpl === -1;
-                const isPro = tmpl >= 50;
-                return (
-                  <td key={p.id} style={{ padding: '16px', textAlign: 'center' }}>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        background: isFull
-                          ? 'var(--emerald-50)'
-                          : isPro
-                          ? 'var(--violet-100)'
-                          : 'var(--bg-card-secondary)',
-                        color: isFull
-                          ? 'var(--emerald-600)'
-                          : isPro
-                          ? 'var(--indigo-600)'
-                          : 'var(--text-secondary)',
-                        padding: '3px 10px',
-                        borderRadius: 'var(--radius-pill)',
-                        fontWeight: isFull || isPro ? 700 : 600,
-                      }}
-                    >
-                      {isFull ? 'FULL LIBRARY' : isPro ? 'PRO LIBRARY' : 'BASIC LIBRARY'}
-                    </span>
-                  </td>
-                );
-              })}
-            </tr>
-            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-              <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Priority Support & Escalations</td>
-              {plans.map((p) => {
-                const isEnt = p.code.includes('ENTERPRISE');
-                const isPro = p.code.includes('PRO');
-                return (
-                  <td key={p.id} style={{ padding: '16px', textAlign: 'center' }}>
-                    {isEnt ? (
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          color: 'var(--emerald-500)',
-                          fontWeight: 600,
-                          fontSize: '13px',
-                        }}
-                      >
-                        <Check size={16} /> Dedicated Account Manager
-                      </span>
-                    ) : isPro ? (
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          color: 'var(--emerald-500)',
-                          fontWeight: 600,
-                          fontSize: '13px',
-                        }}
-                      >
-                        <Check size={16} /> 24/7 Priority
-                      </span>
-                    ) : (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Community only</span>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-            <tr>
-              <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Pause Subscription</td>
-              {plans.map((p) => (
-                <td key={p.id} style={{ padding: '16px', textAlign: 'center' }}>
-                  {p.allowPause ? (
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        color: 'var(--emerald-500)',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                      }}
-                    >
-                      <Check size={16} /> {p.code.includes('ENTERPRISE') ? 'Flexible' : 'Up to 90 days'}
-                    </span>
-                  ) : (
-                    <X size={16} color="var(--text-muted)" style={{ display: 'inline' }} />
-                  )}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
+      {/* 4-Column Feature Comparison Rows matching Image 1 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '48px' }}>
+        {/* Row 1: Projects */}
+        <div className="pricing-matrix-grid" style={{ alignItems: 'center' }}>
+          <div className="card" style={{ padding: '18px 24px', borderRadius: '16px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px' }}>Projects</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Workspaces and active projects</div>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontWeight: 600, fontSize: '14px' }}>
+            {starterPlan?.featureMap?.projects ?? 1}
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontWeight: 700, fontSize: '14px', color: 'var(--indigo-600)' }}>
+            Unlimited
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontWeight: 700, fontSize: '14px', color: 'var(--indigo-600)' }}>
+            Unlimited
+          </div>
+        </div>
+
+        {/* Row 2: Storage */}
+        <div className="pricing-matrix-grid" style={{ alignItems: 'center' }}>
+          <div className="card" style={{ padding: '18px 24px', borderRadius: '16px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px' }}>Storage</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Included file and asset storage</div>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontWeight: 600, fontSize: '14px' }}>
+            {starterPlan?.featureMap?.storage_gb ?? 5} GB
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontWeight: 600, fontSize: '14px' }}>
+            250 GB
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontWeight: 600, fontSize: '14px' }}>
+            Custom
+          </div>
+        </div>
+
+        {/* Row 3: Custom domains */}
+        <div className="pricing-matrix-grid" style={{ alignItems: 'center' }}>
+          <div className="card" style={{ padding: '18px 24px', borderRadius: '16px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px' }}>Custom domains</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Attach your own branded domains</div>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: 600 }}>
+              <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✕</span>
+              Not included
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+              <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--emerald-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✓</span>
+              Included
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+              <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--emerald-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✓</span>
+              Included
+            </span>
+          </div>
+        </div>
+
+        {/* Row 4: Templates */}
+        <div className="pricing-matrix-grid" style={{ alignItems: 'center' }}>
+          <div className="card" style={{ padding: '18px 24px', borderRadius: '16px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px' }}>Templates</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Starting points for faster setup</div>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px' }}>
+            <span
+              style={{
+                background: 'var(--violet-100)',
+                color: 'var(--indigo-600)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-pill)',
+              }}
+            >
+              BASIC LIBRARY
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px' }}>
+            <span
+              style={{
+                background: 'var(--violet-100)',
+                color: 'var(--indigo-600)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-pill)',
+              }}
+            >
+              PRO LIBRARY
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px' }}>
+            <span
+              style={{
+                background: 'var(--violet-100)',
+                color: 'var(--indigo-600)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-pill)',
+              }}
+            >
+              FULL LIBRARY
+            </span>
+          </div>
+        </div>
+
+        {/* Row 5: Priority Support & SLAs */}
+        <div className="pricing-matrix-grid" style={{ alignItems: 'center' }}>
+          <div className="card" style={{ padding: '18px 24px', borderRadius: '16px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px' }}>Priority Support</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Response time and dedicated SLAs</div>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
+            Community only
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+              <Check size={14} /> 24/7 Priority
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+              <Check size={14} /> Dedicated Manager
+            </span>
+          </div>
+        </div>
+
+        {/* Row 6: Pause Subscription */}
+        <div className="pricing-matrix-grid" style={{ alignItems: 'center' }}>
+          <div className="card" style={{ padding: '18px 24px', borderRadius: '16px' }}>
+            <div style={{ fontWeight: 700, fontSize: '14px' }}>Pause Subscription</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Flexible billing hold periods</div>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: 600 }}>
+              <span style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✕</span>
+              Not included
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+              <Check size={14} /> Up to 90 days
+            </span>
+          </div>
+          <div className="card" style={{ padding: '18px 24px', textAlign: 'center', borderRadius: '16px', fontSize: '13px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+              <Check size={14} /> Flexible
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Checkout Modal */}
@@ -465,4 +549,3 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
     </div>
   );
 };
-

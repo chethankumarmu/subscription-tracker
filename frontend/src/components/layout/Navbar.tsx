@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, Info, ChevronDown } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -40,23 +40,33 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Brand Badge */}
       <div
         className="floating-pill"
+        onClick={() => setActiveTab('overview')}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
           padding: '10px 20px',
           pointerEvents: 'auto',
+          cursor: 'pointer',
         }}
       >
         <div
           style={{
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
+            width: '26px',
+            height: '26px',
+            borderRadius: '8px',
             background: 'var(--emerald-500)',
-            boxShadow: '0 0 10px var(--emerald-400)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#ffffff',
+            fontWeight: 800,
+            fontSize: '14px',
+            boxShadow: '0 0 12px var(--emerald-400)',
           }}
-        />
+        >
+          ↗
+        </div>
         <span style={{ fontWeight: 800, fontSize: '18px', letterSpacing: '-0.02em' }}>
           Finexy<span style={{ color: 'var(--indigo-500)' }}>.</span>
         </span>
@@ -81,15 +91,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab(tab.id)}
               style={{
                 border: 'none',
-                background: isActive ? 'var(--indigo-500)' : 'transparent',
-                color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                background: isActive ? 'var(--text-primary)' : 'transparent',
+                color: isActive ? 'var(--bg-card)' : 'var(--text-secondary)',
                 padding: '8px 18px',
                 borderRadius: 'var(--radius-pill)',
                 fontSize: '13px',
                 fontWeight: isActive ? 600 : 500,
                 cursor: 'pointer',
                 transition: 'all 200ms ease',
-                boxShadow: isActive ? '0 2px 10px rgba(99, 102, 241, 0.35)' : 'none',
+                boxShadow: isActive ? '0 2px 10px rgba(0, 0, 0, 0.15)' : 'none',
               }}
             >
               {tab.label}
@@ -105,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          padding: '8px 16px',
+          padding: '6px 14px',
           pointerEvents: 'auto',
         }}
       >
@@ -166,6 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             padding: '6px',
             borderRadius: '50%',
           }}
+          title="Search"
         >
           <Search size={17} />
         </button>
@@ -184,6 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             borderRadius: '50%',
             position: 'relative',
           }}
+          title="Notifications"
         >
           <Bell size={17} />
           <span
@@ -199,24 +211,57 @@ export const Navbar: React.FC<NavbarProps> = ({
           />
         </button>
 
-        {/* User Avatar */}
-        <div
+        {/* Info Icon */}
+        <button
           style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--indigo-500), var(--violet-600))',
-            color: '#ffffff',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '12px',
-            fontWeight: 700,
+            padding: '6px',
+            borderRadius: '50%',
+          }}
+          title="System Information"
+        >
+          <Info size={17} />
+        </button>
+
+        {/* User Profile matching Finexy */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            paddingLeft: '4px',
+            borderLeft: '1px solid var(--border-color)',
             cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
           }}
         >
-          AV
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--indigo-500), var(--emerald-500))',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 800,
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+            }}
+          >
+            AV
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: '1.2' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>Alex Vance</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>alex@finexy.com</span>
+          </div>
+          <ChevronDown size={14} color="var(--text-muted)" />
         </div>
       </div>
     </header>

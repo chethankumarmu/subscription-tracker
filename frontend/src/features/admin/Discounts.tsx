@@ -43,7 +43,12 @@ export const Discounts: React.FC<DiscountsProps> = ({
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const realValue = discountType === 'PERCENT' ? value * 100 : value * 100; // bps or paise
+      const realValue = discountType === 'PERCENT'
+        ? Math.round(value * 100) // bps
+        : currency === 'USD'
+          ? Math.round(value * 85.0 * 100) // USD to paise
+          : Math.round(value * 100); // INR to paise
+
       await api.createDiscount({
         code: code.toUpperCase(),
         name,
@@ -217,13 +222,13 @@ export const Discounts: React.FC<DiscountsProps> = ({
                     style={{ width: '100%' }}
                   >
                     <option value="PERCENT">Percentage (%)</option>
-                    <option value="FIXED">Fixed Amount (₹)</option>
+                    <option value="FIXED">Fixed Amount ({currency === 'USD' ? '$' : '₹'})</option>
                   </select>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                    Value ({discountType === 'PERCENT' ? '%' : '₹'})
+                    Value ({discountType === 'PERCENT' ? '%' : currency === 'USD' ? '$ USD' : '₹ INR'})
                   </label>
                   <input
                     type="number"

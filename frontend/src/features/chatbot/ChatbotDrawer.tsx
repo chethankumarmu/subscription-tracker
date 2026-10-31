@@ -14,10 +14,21 @@ import {
 
 interface ChatbotDrawerProps {
   onNotification: (title: string, message?: string) => void;
+  isOpenControlled?: boolean;
+  onCloseControlled?: () => void;
 }
 
-export const ChatbotDrawer: React.FC<ChatbotDrawerProps> = ({ onNotification }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const ChatbotDrawer: React.FC<ChatbotDrawerProps> = ({
+  onNotification,
+  isOpenControlled,
+  onCloseControlled,
+}) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = isOpenControlled !== undefined ? isOpenControlled : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    setInternalIsOpen(open);
+    if (!open && onCloseControlled) onCloseControlled();
+  };
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       sender: 'BOT',

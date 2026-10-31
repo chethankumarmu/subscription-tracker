@@ -13,6 +13,7 @@ export const SupportQueue: React.FC<SupportQueueProps> = ({ onNotification }) =>
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   useEffect(() => {
     loadTickets();
@@ -83,107 +84,157 @@ export const SupportQueue: React.FC<SupportQueueProps> = ({ onNotification }) =>
       </div>
 
       <div style={{ display: 'grid', gap: '16px' }}>
-        {filtered.map((ticket) => (
-          <div
-            key={ticket.id}
-            className="card"
-            style={{
-              padding: '20px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '20px',
-              borderLeft:
-                ticket.priority === 'HIGH'
-                  ? '4px solid #ef4444'
-                  : ticket.status === 'RESOLVED'
-                  ? '4px solid var(--emerald-500)'
-                  : '4px solid var(--indigo-500)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+        {filtered.length === 0 ? (
+          <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            No support tickets found for the selected filter.
+          </div>
+        ) : (
+          filtered.map((ticket) => {
+            const isExpanded = selectedTicketId === ticket.id;
+            return (
               <div
+                key={ticket.id}
+                className="card"
+                onClick={() => setSelectedTicketId(isExpanded ? null : ticket.id)}
                 style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'var(--bg-card-secondary)',
+                  padding: '20px 24px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--indigo-500)',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  cursor: 'pointer',
+                  borderLeft:
+                    ticket.priority === 'HIGH'
+                      ? '4px solid #ef4444'
+                      : ticket.status === 'RESOLVED'
+                      ? '4px solid var(--emerald-500)'
+                      : '4px solid var(--indigo-500)',
                 }}
               >
-                <Headphones size={20} />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--indigo-500)' }}>
-                    {ticket.number}
-                  </span>
-                  <StatusChip status={ticket.status} />
-                  {ticket.priority === 'HIGH' && (
-                    <span
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    <div
                       style={{
-                        background: '#fee2e2',
-                        color: '#b91c1c',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 'var(--radius-pill)',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'var(--bg-card-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--indigo-500)',
                       }}
                     >
-                      URGENT ESCALATION
-                    </span>
-                  )}
+                      <Headphones size={20} />
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--indigo-500)' }}>
+                          {ticket.number}
+                        </span>
+                        <StatusChip status={ticket.status} />
+                        {ticket.priority === 'HIGH' && (
+                          <span
+                            style={{
+                              background: '#fee2e2',
+                              color: '#b91c1c',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-pill)',
+                            }}
+                          >
+                            URGENT ESCALATION
+                          </span>
+                        )}
+                      </div>
+
+                      <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>
+                        {ticket.subject}
+                      </h4>
+
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        Filed: {formatDate(ticket.createdAt)} • Customer ID: #{ticket.customerId}
+                        {ticket.sessionId && ` • Escalated from Chat Session #${ticket.sessionId}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Status change actions */}
+                  <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                    {ticket.status !== 'IN_PROGRESS' && ticket.status !== 'RESOLVED' && (
+                      <button
+                        onClick={() => handleUpdateStatus(ticket, 'IN_PROGRESS')}
+                        className="btn-secondary"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                      >
+                        Mark In Progress
+                      </button>
+                    )}
+
+                    {ticket.status !== 'RESOLVED' && (
+                      <button
+                        onClick={() => handleUpdateStatus(ticket, 'RESOLVED')}
+                        className="btn-emerald"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                      >
+                        <CheckCircle size={14} /> Resolve Ticket
+                      </button>
+                    )}
+
+                    {ticket.status === 'RESOLVED' && (
+                      <button
+                        onClick={() => handleUpdateStatus(ticket, 'OPEN')}
+                        className="btn-secondary"
+                        style={{ padding: '6px 14px', fontSize: '12px' }}
+                      >
+                        Re-open
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '4px' }}>
-                  {ticket.subject}
-                </h4>
-
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Filed: {formatDate(ticket.createdAt)} • Customer ID: #{ticket.customerId}
-                  {ticket.sessionId && ` • Escalated from Chat Session #${ticket.sessionId}`}
-                </p>
+                {/* Expanded Context Details */}
+                {isExpanded && (
+                  <div
+                    style={{
+                      background: 'var(--bg-card-secondary)',
+                      borderRadius: 'var(--radius-inner)',
+                      padding: '16px',
+                      fontSize: '13px',
+                      marginTop: '8px',
+                      borderTop: '1px solid var(--border-color)',
+                      animation: 'fadeIn 150ms ease',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div style={{ fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
+                      Ticket Audit Information:
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Ticket ID</span>
+                        <strong>#{ticket.id}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Chat Session Reference</span>
+                        <strong>{ticket.sessionId ? `Session #${ticket.sessionId}` : 'Direct Portal Submission'}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Priority Level</span>
+                        <strong style={{ color: ticket.priority === 'HIGH' ? '#ef4444' : 'inherit' }}>{ticket.priority}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>Resolution Timestamp</span>
+                        <strong>{ticket.resolvedAt ? formatDate(ticket.resolvedAt) : 'Pending Resolution'}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* Status change actions */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {ticket.status !== 'IN_PROGRESS' && ticket.status !== 'RESOLVED' && (
-                <button
-                  onClick={() => handleUpdateStatus(ticket, 'IN_PROGRESS')}
-                  className="btn-secondary"
-                  style={{ padding: '6px 14px', fontSize: '12px' }}
-                >
-                  Mark In Progress
-                </button>
-              )}
-
-              {ticket.status !== 'RESOLVED' && (
-                <button
-                  onClick={() => handleUpdateStatus(ticket, 'RESOLVED')}
-                  className="btn-emerald"
-                  style={{ padding: '6px 14px', fontSize: '12px' }}
-                >
-                  <CheckCircle size={14} /> Resolve Ticket
-                </button>
-              )}
-
-              {ticket.status === 'RESOLVED' && (
-                <button
-                  onClick={() => handleUpdateStatus(ticket, 'OPEN')}
-                  className="btn-secondary"
-                  style={{ padding: '6px 14px', fontSize: '12px' }}
-                >
-                  Re-open
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
     </div>
   );

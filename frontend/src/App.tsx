@@ -15,6 +15,7 @@ export default function App() {
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -42,6 +43,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         theme={theme}
         setTheme={setTheme}
+        onOpenHelp={() => setIsChatOpen(true)}
       />
 
       <div className="main-content">
@@ -60,6 +62,7 @@ export default function App() {
               currency={currency}
               onNotification={handleNotify}
               onNavigateToPricing={() => setActiveTab('pricing')}
+              onToggleCurrency={setCurrency}
             />
           )}
 
@@ -101,7 +104,11 @@ export default function App() {
       </div>
 
       {/* Floating Support Chatbot Drawer with PostgreSQL Knowledge Base */}
-      <ChatbotDrawer onNotification={handleNotify} />
+      <ChatbotDrawer
+        onNotification={handleNotify}
+        isOpenControlled={isChatOpen}
+        onCloseControlled={() => setIsChatOpen(false)}
+      />
 
       {/* Real-time Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={handleDismissToast} />

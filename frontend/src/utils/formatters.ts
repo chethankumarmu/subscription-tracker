@@ -3,6 +3,10 @@ export function formatCurrency(
   currency: 'INR' | 'USD' = 'INR',
   showCents: boolean = true
 ): string {
+  if (paise == null || isNaN(paise)) {
+    return currency === 'USD' ? '$0.00' : '₹0.00';
+  }
+
   if (currency === 'USD') {
     const dollars = (paise / 100) / 85.0; // 1 USD ≈ 85 INR
     return new Intl.NumberFormat('en-US', {

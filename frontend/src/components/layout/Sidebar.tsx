@@ -9,6 +9,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  HelpCircle,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -16,6 +17,7 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void;
   theme: 'light' | 'dark';
   setTheme: (t: 'light' | 'dark') => void;
+  onOpenHelp?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -23,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   theme,
   setTheme,
+  onOpenHelp,
 }) => {
   const navItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
@@ -102,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* Bottom Controls: Theme Toggle & Logout */}
+      {/* Bottom Controls: Theme Toggle, Help & Logout */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
@@ -122,6 +125,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+
+        <button
+          onClick={() => (onOpenHelp ? onOpenHelp() : setActiveTab('support'))}
+          title="Virtual Assistant & Help"
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'var(--bg-card-secondary)',
+            color: 'var(--indigo-500)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+          }}
+        >
+          <HelpCircle size={18} />
         </button>
 
         <button

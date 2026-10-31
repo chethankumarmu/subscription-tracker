@@ -43,6 +43,31 @@ export const Activity: React.FC<ActivityProps> = ({
       inv.contactName?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleExportCsv = () => {
+    if (!invoices || invoices.length === 0) return;
+    const headers = ['Invoice Number', 'Customer', 'Contact', 'Issue Date', 'Due Date', 'Total (INR)', 'Balance (INR)', 'Status'];
+    const rows = invoices.map((inv) => [
+      inv.number,
+      `"${(inv.customerName || '').replace(/"/g, '""')}"`,
+      `"${(inv.contactName || '').replace(/"/g, '""')}"`,
+      inv.issueDate || '',
+      inv.dueDate || '',
+      (inv.totalPaise / 100).toFixed(2),
+      (inv.balancePaise / 100).toFixed(2),
+      inv.status,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `finexy_invoices_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onNotification('Export Downloaded', 'CSV statement exported successfully.');
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
@@ -56,7 +81,7 @@ export const Activity: React.FC<ActivityProps> = ({
         </div>
 
         <button
-          onClick={() => onNotification('Export Prepared', 'Exporting CSV of all historical ledger entries')}
+          onClick={handleExportCsv}
           className="btn-secondary"
           style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
