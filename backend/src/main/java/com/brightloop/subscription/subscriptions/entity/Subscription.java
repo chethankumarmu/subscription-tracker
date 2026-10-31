@@ -243,6 +243,22 @@ public class Subscription {
         this.lines = lines;
     }
 
+    public Long getCustomerId() {
+        return customer != null ? customer.getId() : null;
+    }
+
+    public Long getPlanVersionId() {
+        return planVersion != null ? planVersion.getId() : null;
+    }
+
+    public Boolean getAllowPause() {
+        return planVersion != null ? planVersion.getAllowPause() : true;
+    }
+
+    public Boolean getAllowRenewal() {
+        return planVersion != null ? planVersion.getAllowRenewal() : true;
+    }
+
     public static Builder builder() {
         return new Builder();
     }

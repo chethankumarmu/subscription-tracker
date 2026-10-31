@@ -150,6 +150,10 @@ public class Invoice {
         return customer;
     }
 
+    public Long getCustomerId() {
+        return customer != null ? customer.getId() : null;
+    }
+
     public void setCustomer(Customer customer) {
         this.customer = customer;
     }

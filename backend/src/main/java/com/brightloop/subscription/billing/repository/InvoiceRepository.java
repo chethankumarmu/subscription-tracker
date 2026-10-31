@@ -2,6 +2,7 @@ package com.brightloop.subscription.billing.repository;
 
 import com.brightloop.subscription.billing.entity.Invoice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -20,4 +21,16 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findBySubscriptionId(Long subscriptionId);
 
     Optional<Invoice> findFirstBySubscriptionIdOrderByPeriodStartDesc(Long subscriptionId);
+
+    List<Invoice> findByCustomerId(Long customerId);
+
+    List<Invoice> findByStatus(String status);
+
+    List<Invoice> findAllByOrderByIssueDateDesc();
+
+    @Query("SELECT COALESCE(SUM(i.totalPaise), 0) FROM Invoice i")
+    Long sumTotalInvoices();
+
+    @Query("SELECT COALESCE(SUM(i.amountPaidPaise), 0) FROM Invoice i")
+    Long sumAmountPaid();
 }

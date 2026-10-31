@@ -1,0 +1,10 @@
+package com.brightloop.subscription.support.repository;
+
+import com.brightloop.subscription.support.entity.ChatSession;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> {
+}
+

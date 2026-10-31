@@ -18,6 +18,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     List<Subscription> findByCustomerId(Long customerId);
 
+    List<Subscription> findByStatus(String status);
+
+    List<Subscription> findAllByOrderByCreatedAtDesc();
+
     List<Subscription> findByStatusAndExpiryDateIn(String status, Collection<LocalDate> expiryDates);
 
     @Query("SELECT s FROM Subscription s WHERE s.status = 'ACTIVE' AND (s.expiryDate = :date7 OR s.expiryDate = :date1)")
