@@ -1,8 +1,12 @@
 package com.brightloop.subscription.subscriptions.controller;
 
 import com.brightloop.subscription.billing.entity.Invoice;
+import com.brightloop.subscription.subscriptions.dto.CreateSubscriptionRequest;
 import com.brightloop.subscription.subscriptions.dto.RenewalResponseDto;
+import com.brightloop.subscription.subscriptions.dto.SubscriptionResponseDto;
 import com.brightloop.subscription.subscriptions.service.SubscriptionService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -19,6 +23,25 @@ public class SubscriptionController {
 
     public SubscriptionController(SubscriptionService subscriptionService) {
         this.subscriptionService = subscriptionService;
+    }
+
+    /**
+     * Creates a new subscription using plan_version_id.
+     * Accessible by any authenticated user.
+     */
+    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<SubscriptionResponseDto> createSubscription(
+            @Valid @RequestBody CreateSubscriptionRequest request,
+            Authentication authentication
+    ) {
+        String username = authentication != null ? authentication.getName() : "";
+        boolean isAdminOrStaff = authentication != null && authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_STAFF") || role.equals("ADMIN") || role.equals("STAFF"));
+
+        SubscriptionResponseDto response = subscriptionService.createSubscription(request, username, isAdminOrStaff);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**

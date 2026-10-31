@@ -36,6 +36,15 @@ class SubscriptionServiceRenewalTest {
     @Mock
     private EmailOutboxService emailOutboxService;
 
+    @Mock
+    private com.brightloop.subscription.plans.repository.PlanVersionRepository planVersionRepository;
+
+    @Mock
+    private com.brightloop.subscription.auth.repository.CustomerRepository customerRepository;
+
+    @Mock
+    private com.brightloop.subscription.auth.repository.UserRepository userRepository;
+
     private SubscriptionService subscriptionService;
 
     @BeforeEach
@@ -43,7 +52,10 @@ class SubscriptionServiceRenewalTest {
         subscriptionService = new SubscriptionService(
                 subscriptionRepository,
                 invoiceService,
-                emailOutboxService
+                emailOutboxService,
+                planVersionRepository,
+                customerRepository,
+                userRepository
         );
     }
 
