@@ -4,6 +4,8 @@ import com.brightloop.subscription.auth.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "plan_versions", uniqueConstraints = {
@@ -21,6 +23,9 @@ public class PlanVersion {
 
     @Column(name = "version_no", nullable = false)
     private Integer versionNo;
+
+    @Column(nullable = false)
+    private String status = "DRAFT"; // DRAFT, PUBLISHED, RETIRED
 
     @Column(name = "price_paise", nullable = false)
     private Long pricePaise;
@@ -62,13 +67,17 @@ public class PlanVersion {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    @OneToMany(mappedBy = "planVersion", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PlanLimit> limits = new ArrayList<>();
+
     public PlanVersion() {
     }
 
-    public PlanVersion(Long id, Plan plan, Integer versionNo, Long pricePaise, String billingCycle, Integer minQuantity, LocalDate availableFrom, LocalDate availableTo, Boolean autoClose, Boolean allowEarlyClose, Boolean allowPause, Boolean allowRenewal, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, User createdBy, OffsetDateTime createdAt) {
+    public PlanVersion(Long id, Plan plan, Integer versionNo, String status, Long pricePaise, String billingCycle, Integer minQuantity, LocalDate availableFrom, LocalDate availableTo, Boolean autoClose, Boolean allowEarlyClose, Boolean allowPause, Boolean allowRenewal, OffsetDateTime effectiveFrom, OffsetDateTime effectiveTo, User createdBy, OffsetDateTime createdAt, List<PlanLimit> limits) {
         this.id = id;
         this.plan = plan;
         this.versionNo = versionNo;
+        this.status = status != null ? status : "DRAFT";
         this.pricePaise = pricePaise;
         this.billingCycle = billingCycle;
         this.minQuantity = minQuantity != null ? minQuantity : 1;
@@ -82,6 +91,7 @@ public class PlanVersion {
         this.effectiveTo = effectiveTo;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
+        this.limits = limits != null ? limits : new ArrayList<>();
     }
 
     @PrePersist
@@ -116,6 +126,14 @@ public class PlanVersion {
 
     public void setVersionNo(Integer versionNo) {
         this.versionNo = versionNo;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public Long getPricePaise() {
@@ -222,6 +240,14 @@ public class PlanVersion {
         this.createdAt = createdAt;
     }
 
+    public List<PlanLimit> getLimits() {
+        return limits;
+    }
+
+    public void setLimits(List<PlanLimit> limits) {
+        this.limits = limits;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -230,6 +256,7 @@ public class PlanVersion {
         private Long id;
         private Plan plan;
         private Integer versionNo;
+        private String status = "DRAFT";
         private Long pricePaise;
         private String billingCycle;
         private Integer minQuantity = 1;
@@ -243,6 +270,7 @@ public class PlanVersion {
         private OffsetDateTime effectiveTo;
         private User createdBy;
         private OffsetDateTime createdAt;
+        private List<PlanLimit> limits = new ArrayList<>();
 
         public Builder id(Long id) {
             this.id = id;
@@ -256,6 +284,11 @@ public class PlanVersion {
 
         public Builder versionNo(Integer versionNo) {
             this.versionNo = versionNo;
+            return this;
+        }
+
+        public Builder status(String status) {
+            this.status = status;
             return this;
         }
 
@@ -324,8 +357,13 @@ public class PlanVersion {
             return this;
         }
 
+        public Builder limits(List<PlanLimit> limits) {
+            this.limits = limits;
+            return this;
+        }
+
         public PlanVersion build() {
-            return new PlanVersion(id, plan, versionNo, pricePaise, billingCycle, minQuantity, availableFrom, availableTo, autoClose, allowEarlyClose, allowPause, allowRenewal, effectiveFrom, effectiveTo, createdBy, createdAt);
+            return new PlanVersion(id, plan, versionNo, status, pricePaise, billingCycle, minQuantity, availableFrom, availableTo, autoClose, allowEarlyClose, allowPause, allowRenewal, effectiveFrom, effectiveTo, createdBy, createdAt, limits);
         }
     }
 }
