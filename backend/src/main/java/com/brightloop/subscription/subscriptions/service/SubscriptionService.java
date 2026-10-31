@@ -183,14 +183,20 @@ public class SubscriptionService {
         if (subscription.getExpiryDate() == null) {
             subscription.setExpiryDate(invoiceService.extendExpiryDate(startDate, cycle));
         }
-        if (subscription.getNextBillingDate() == null) {
-            subscription.setNextBillingDate(startDate);
-        }
-
+        subscription.setNextBillingDate(periodEnd.plusDays(1));
         subscriptionRepository.save(subscription);
 
-        Invoice invoice = invoiceService.generateInvoiceForSubscription(subscription, startDate, periodEnd, "CONFIRMED");
-        emailOutboxService.queueInvoiceEmail(invoice);
+        // Step 2: Create its first invoice if none exists, then queue the invoice email with PDF attached
+        Optional<Invoice> existingInvoice = invoiceService.findLatestInvoiceForSubscription(subscriptionId);
+        Invoice invoice;
+        if (existingInvoice.isEmpty()) {
+            invoice = invoiceService.generateInvoiceForSubscription(subscription, startDate, periodEnd, "CONFIRMED");
+            if (emailOutboxService != null) {
+                emailOutboxService.queueInvoiceEmail(invoice);
+            }
+        } else {
+            invoice = existingInvoice.get();
+        }
 
         return invoice;
     }
@@ -266,6 +272,20 @@ public class SubscriptionService {
     }
 
     @Transactional
+    public RenewalResponseDto renewSubscription(Long subscriptionId, UserPrincipal principal) {
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subscription not found"));
+
+        if (principal != null && "CUSTOMER".equalsIgnoreCase(principal.getRole())) {
+            if (principal.getCustomerId() == null || !principal.getCustomerId().equals(subscription.getCustomerId())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Subscription not found");
+            }
+        }
+
+        return doRenewSubscription(subscription);
+    }
+
+    @Transactional
     public RenewalResponseDto renewSubscription(Long subscriptionId, String currentUsername, boolean isAdminOrStaff) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription not found with id: " + subscriptionId));
@@ -273,27 +293,33 @@ public class SubscriptionService {
         if (!isAdminOrStaff) {
             boolean isOwner = false;
             if (subscription.getCustomer() != null && subscription.getCustomer().getUser() != null) {
-                isOwner = currentUsername.equalsIgnoreCase(subscription.getCustomer().getUser().getEmail());
+                isOwner = currentUsername != null && currentUsername.equalsIgnoreCase(subscription.getCustomer().getUser().getEmail());
             }
             if (!isOwner) {
                 throw new AccessDeniedException("You do not have permission to renew subscriptions belonging to other customers");
             }
         }
 
+        return doRenewSubscription(subscription);
+    }
+
+    private RenewalResponseDto doRenewSubscription(Subscription subscription) {
         PlanVersion planVersion = subscription.getPlanVersion();
-        if (planVersion != null && Boolean.FALSE.equals(planVersion.getAllowRenewal())) {
+        if (planVersion == null || Boolean.FALSE.equals(planVersion.getAllowRenewal())) {
             throw new IllegalStateException("Plan version does not allow renewal");
         }
 
-        String cycle = planVersion != null ? planVersion.getBillingCycle() : "MONTHLY";
+        String cycle = planVersion.getBillingCycle() != null ? planVersion.getBillingCycle() : "MONTHLY";
         LocalDate currentExpiry = subscription.getExpiryDate() != null ? subscription.getExpiryDate() : LocalDate.now();
 
-        Optional<Invoice> latestInvoiceOpt = invoiceService.findLatestInvoiceForSubscription(subscriptionId);
+        Optional<Invoice> latestInvoiceOpt = invoiceService.findLatestInvoiceForSubscription(subscription.getId());
         if (latestInvoiceOpt.isPresent()) {
             Invoice latestInvoice = latestInvoiceOpt.get();
             if (latestInvoice.getPeriodEnd() != null && latestInvoice.getPeriodEnd().isEqual(currentExpiry)
                     && !"CANCELLED".equals(latestInvoice.getStatus())) {
-                emailOutboxService.queueInvoiceEmail(latestInvoice);
+                if (emailOutboxService != null) {
+                    emailOutboxService.queueInvoiceEmail(latestInvoice);
+                }
                 return new RenewalResponseDto(
                         latestInvoice.getId(),
                         latestInvoice.getNumber(),
@@ -322,7 +348,9 @@ public class SubscriptionService {
         subscription.setNextBillingDate(nextPeriodStart);
         subscriptionRepository.save(subscription);
 
-        emailOutboxService.queueInvoiceEmail(invoice);
+        if (emailOutboxService != null) {
+            emailOutboxService.queueInvoiceEmail(invoice);
+        }
 
         return new RenewalResponseDto(
                 invoice.getId(),

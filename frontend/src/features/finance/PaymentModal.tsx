@@ -5,7 +5,7 @@ import { X, CreditCard, QrCode, Building2, Banknote, ShieldCheck } from 'lucide-
 
 interface PaymentModalProps {
   invoiceId: number;
-  invoiceNumber: string;
+  invoiceNumber?: string;
   balancePaise: number;
   currency: 'INR' | 'USD';
   onClose: () => void;
@@ -14,7 +14,7 @@ interface PaymentModalProps {
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   invoiceId,
-  invoiceNumber,
+  invoiceNumber = "INV-OFFLINE",
   balancePaise,
   currency,
   onClose,

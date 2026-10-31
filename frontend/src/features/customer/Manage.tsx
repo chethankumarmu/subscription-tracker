@@ -39,7 +39,7 @@ export const Manage: React.FC<ManageProps> = ({
   const handleTogglePause = async (sub: Subscription) => {
     try {
       setActionInProgress(sub.id);
-      await api.togglePauseSubscription(sub.id);
+      await api.pauseSubscription(sub.id);
       const newStatus = !sub.isPaused ? 'Paused' : 'Resumed';
       onNotification(
         `Subscription ${newStatus}`,
@@ -59,7 +59,7 @@ export const Manage: React.FC<ManageProps> = ({
     }
     try {
       setActionInProgress(sub.id);
-      await api.closeSubscription(sub.id, 'User cancelled from management portal');
+      await api.closeSubscription(sub.id);
       onNotification(
         'Subscription Cancelled',
         `${sub.number} status updated to CLOSED in database.`

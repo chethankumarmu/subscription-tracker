@@ -31,12 +31,12 @@ public class EmailOutboxWorker {
             EmailOutboxRepository emailOutboxRepository,
             JavaMailSender mailSender,
             InvoicePdfService invoicePdfService,
-            @Value("${app.mail.from:1ms24cs052@msrit.edu}") String mailFrom
+            @Value("${app.mail.from:noreply@brightloop.com}") String mailFrom
     ) {
         this.emailOutboxRepository = emailOutboxRepository;
         this.mailSender = mailSender;
         this.invoicePdfService = invoicePdfService;
-        this.mailFrom = mailFrom;
+        this.mailFrom = (mailFrom != null && !mailFrom.isBlank()) ? mailFrom : "noreply@brightloop.com";
     }
 
     /**
@@ -47,7 +47,7 @@ public class EmailOutboxWorker {
         OffsetDateTime now = OffsetDateTime.now();
         List<EmailOutbox> pendingEmails = emailOutboxRepository.findPendingEmails("PENDING", now, PageRequest.of(0, 20));
 
-        if (pendingEmails.isEmpty()) {
+        if (pendingEmails == null || pendingEmails.isEmpty()) {
             return;
         }
 
@@ -66,9 +66,9 @@ public class EmailOutboxWorker {
             helper.setFrom(mailFrom);
             helper.setTo(email.getToAddress());
             helper.setSubject(email.getSubject());
-            helper.setText(email.getBody(), true); // html = true
+            helper.setText(email.getBody(), true); // html = true, multipart = true
 
-            if (email.getAttachmentInvoiceId() != null) {
+            if (email.getAttachmentInvoiceId() != null && invoicePdfService != null) {
                 byte[] pdfBytes = invoicePdfService.generateInvoicePdf(email.getAttachmentInvoiceId());
                 String attachmentName = email.getAttachmentName() != null ? email.getAttachmentName() : "invoice.pdf";
                 helper.addAttachment(attachmentName, new ByteArrayResource(pdfBytes), "application/pdf");
@@ -83,7 +83,7 @@ public class EmailOutboxWorker {
 
         } catch (Exception ex) {
             log.error("Failed to send email id={}: {}", email.getId(), ex.getMessage());
-            int attempts = email.getAttempts() + 1;
+            int attempts = (email.getAttempts() != null ? email.getAttempts() : 0) + 1;
             email.setAttempts(attempts);
             email.setLastError(ex.getMessage() != null ? ex.getMessage() : ex.toString());
 

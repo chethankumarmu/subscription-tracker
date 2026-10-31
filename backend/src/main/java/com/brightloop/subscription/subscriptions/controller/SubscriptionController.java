@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -98,14 +99,13 @@ public class SubscriptionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CUSTOMER')")
     public ResponseEntity<RenewalResponseDto> renewSubscription(
             @PathVariable("id") Long id,
-            Authentication authentication
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        String username = authentication != null ? authentication.getName() : "";
-        boolean isAdminOrStaff = authentication != null && authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_STAFF") || role.equals("ADMIN") || role.equals("STAFF"));
-
-        RenewalResponseDto response = subscriptionService.renewSubscription(id, username, isAdminOrStaff);
-        return ResponseEntity.ok(response);
+        try {
+            RenewalResponseDto response = subscriptionService.renewSubscription(id, principal);
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 }

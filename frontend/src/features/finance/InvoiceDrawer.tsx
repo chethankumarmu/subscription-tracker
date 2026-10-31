@@ -8,16 +8,18 @@ import { X, Printer, CreditCard, Building, Calendar, Receipt } from 'lucide-reac
 
 interface InvoiceDrawerProps {
   invoiceId: number;
-  currency: 'INR' | 'USD';
+  currency?: 'INR' | 'USD';
   onClose: () => void;
-  onPaymentSuccess: (msg: string) => void;
+  onPaymentSuccess?: (msg?: string) => void;
+  onNotification?: (title: string, msg?: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 export const InvoiceDrawer: React.FC<InvoiceDrawerProps> = ({
   invoiceId,
-  currency,
+  currency = 'INR',
   onClose,
-  onPaymentSuccess,
+  onPaymentSuccess = () => {},
+  onNotification,
 }) => {
   const [data, setData] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(true);

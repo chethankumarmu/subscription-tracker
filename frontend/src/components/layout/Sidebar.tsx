@@ -1,11 +1,21 @@
 import React from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
-  CreditCard,
-  BarChart3,
+  Package,
   Layers,
   Tag,
+  Percent,
+  Users,
+  CreditCard,
+  PlayCircle,
+  FileText,
+  BadgeDollarSign,
+  AlertTriangle,
   Headphones,
+  UserPlus,
+  Shield,
+  Mail,
   Sun,
   Moon,
   LogOut,
@@ -27,14 +37,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setTheme,
   onOpenHelp,
 }) => {
-  const navItems = [
+  const { user, logout } = useAuth();
+  const role = user?.role || 'CUSTOMER';
+
+  // STEP 1: Admin layout
+  const adminNav = [
     { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
-    { id: 'activity', icon: BarChart3, label: 'Activity' },
-    { id: 'pricing', icon: Layers, label: 'Pricing Matrix' },
-    { id: 'manage', icon: CreditCard, label: 'Subscriptions' },
+    { id: 'products', icon: Package, label: 'Products' },
+    { id: 'plans', icon: Layers, label: 'Plans' },
     { id: 'discounts', icon: Tag, label: 'Discounts' },
+    { id: 'tax-rules', icon: Percent, label: 'Tax rules' },
+    { id: 'customers', icon: Users, label: 'Customers' },
+    { id: 'subscriptions', icon: CreditCard, label: 'Subscriptions' },
+    { id: 'billing-runs', icon: PlayCircle, label: 'Billing runs' },
+    { id: 'invoices', icon: FileText, label: 'Invoices' },
+    { id: 'payments', icon: BadgeDollarSign, label: 'Payments' },
+    { id: 'overdue', icon: AlertTriangle, label: 'Overdue & Aging' },
     { id: 'support', icon: Headphones, label: 'Support Queue' },
+    { id: 'staff', icon: UserPlus, label: 'Staff Accounts' },
+    { id: 'audit', icon: Shield, label: 'Audit Log' },
+    { id: 'email-outbox', icon: Mail, label: 'Email Outbox' },
   ];
+
+  // STEP 2: Staff layout
+  const staffNav = [
+    { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
+    { id: 'customers', icon: Users, label: 'Customers' },
+    { id: 'subscriptions', icon: CreditCard, label: 'Subscriptions' },
+    { id: 'invoices', icon: FileText, label: 'Invoices' },
+    { id: 'payments', icon: BadgeDollarSign, label: 'Payments' },
+    { id: 'overdue', icon: AlertTriangle, label: 'Overdue & Aging' },
+    { id: 'support', icon: Headphones, label: 'Support Queue' },
+    { id: 'plans', icon: Layers, label: 'Plans (View Only)' },
+  ];
+
+  // STEP 3: Customer portal
+  const customerNav = [
+    { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
+    { id: 'my-plan', icon: Layers, label: 'My Plan' },
+    { id: 'my-invoices', icon: FileText, label: 'My Invoices' },
+    { id: 'my-payments', icon: BadgeDollarSign, label: 'My Payments' },
+    { id: 'support', icon: Headphones, label: 'Support' },
+  ];
+
+  const navItems = role === 'ADMIN' ? adminNav : role === 'STAFF' ? staffNav : customerNav;
 
   return (
     <aside
@@ -49,7 +95,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '16px 8px',
+        padding: '14px 6px',
+        overflowY: 'auto',
       }}
       className="floating-pill"
     >
@@ -59,6 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         style={{
           width: '38px',
           height: '38px',
+          minHeight: '38px',
           borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--emerald-500), var(--indigo-500))',
           display: 'flex',
@@ -69,13 +117,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           fontSize: '18px',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+          marginBottom: '10px',
         }}
       >
         F
       </div>
 
       {/* Middle Navigation Group */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          width: '100%',
+          alignItems: 'center',
+          overflowY: 'auto',
+          padding: '2px 0',
+        }}
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -85,8 +144,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => setActiveTab(item.id)}
               title={item.label}
               style={{
-                width: '42px',
-                height: '42px',
+                width: '38px',
+                height: '38px',
+                minHeight: '38px',
                 borderRadius: '50%',
                 border: 'none',
                 background: isActive ? 'var(--indigo-500)' : 'transparent',
@@ -99,20 +159,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 boxShadow: isActive ? '0 4px 12px rgba(99, 102, 241, 0.4)' : 'none',
               }}
             >
-              <Icon size={19} />
+              <Icon size={17} />
             </button>
           );
         })}
       </div>
 
-      {/* Bottom Controls: Theme Toggle, Help & Logout */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* Bottom Controls: Theme Toggle & Logout */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
         <button
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
           title="Toggle Day/Night theme"
           style={{
-            width: '40px',
-            height: '40px',
+            width: '36px',
+            height: '36px',
             borderRadius: '50%',
             border: 'none',
             background: 'var(--bg-card-secondary)',
@@ -124,34 +184,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             transition: 'all 200ms ease',
           }}
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
         </button>
 
         <button
-          onClick={() => (onOpenHelp ? onOpenHelp() : setActiveTab('support'))}
-          title="Virtual Assistant & Help"
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            border: 'none',
-            background: 'var(--bg-card-secondary)',
-            color: 'var(--indigo-500)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            transition: 'all 150ms ease',
-          }}
-        >
-          <HelpCircle size={18} />
-        </button>
-
-        <button
+          onClick={logout}
           title="Sign out"
           style={{
-            width: '40px',
-            height: '40px',
+            width: '36px',
+            height: '36px',
             borderRadius: '50%',
             border: 'none',
             background: 'transparent',
@@ -163,10 +204,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             transition: 'all 150ms ease',
           }}
         >
-          <LogOut size={18} />
+          <LogOut size={16} />
         </button>
       </div>
     </aside>
   );
 };
-

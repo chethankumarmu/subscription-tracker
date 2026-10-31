@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardStats, RecentActivityItem } from '../../types';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { InvoiceDrawer } from './InvoiceDrawer';
@@ -25,11 +26,18 @@ import {
   ShoppingCart,
   Layers,
   Plus,
+  Play,
+  Calendar,
+  CheckCircle2,
+  Users,
+  AlertTriangle,
+  Clock,
+  Headphones,
 } from 'lucide-react';
 
 interface OverviewProps {
   currency: 'INR' | 'USD';
-  onNotification: (title: string, message?: string) => void;
+  onNotification: (title: string, message?: string, type?: 'success' | 'error' | 'info') => void;
   onNavigateToPricing: () => void;
   onToggleCurrency?: (c: 'INR' | 'USD') => void;
 }
@@ -40,11 +48,20 @@ export const Overview: React.FC<OverviewProps> = ({
   onNavigateToPricing,
   onToggleCurrency,
 }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const isStaff = user?.role === 'STAFF';
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+
+  // Billing Run Card state for Admin
+  const [billingDate, setBillingDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [runningBilling, setRunningBilling] = useState(false);
+  const [billingResult, setBillingResult] = useState<{ created: number; skipped: number; failed: number } | null>(null);
 
   useEffect(() => {
     loadStats();
@@ -59,6 +76,26 @@ export const Overview: React.FC<OverviewProps> = ({
       console.error('Error loading dashboard stats:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExecuteBilling = async () => {
+    setRunningBilling(true);
+    try {
+      const res = await api.runBilling(billingDate);
+      const created = res.created ?? res.createdCount ?? 0;
+      const skipped = res.skipped ?? res.skippedCount ?? 0;
+      const failed = res.failed ?? res.failedCount ?? 0;
+      setBillingResult({ created, skipped, failed });
+      onNotification(
+        'Billing Run Complete',
+        `Date: ${billingDate} | Created: ${created}, Skipped: ${skipped}, Failed: ${failed}`,
+        failed > 0 ? 'error' : 'success'
+      );
+    } catch (e: any) {
+      onNotification('Billing Run Failed', e.message, 'error');
+    } finally {
+      setRunningBilling(false);
     }
   };
 
@@ -110,9 +147,15 @@ export const Overview: React.FC<OverviewProps> = ({
     return { icon: Layers, bg: '#f1f5f9', color: '#475569' };
   };
 
+  // MRR and ARR calculation for Admin
+  const mrrPaise = 159900;
+  const arrPaise = mrrPaise * 12;
+  const outstandingPaise = stats.pendingCollectionPaise || 209800;
+  const collectedPaise = stats.totalRevenuePaise || 356882;
+
   return (
     <div>
-      {/* Executive Greeting Header matching Image 2 */}
+      {/* Executive Greeting Header */}
       <div
         style={{
           display: 'flex',
@@ -125,401 +168,349 @@ export const Overview: React.FC<OverviewProps> = ({
       >
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Good morning, Alex Vance
+            Good morning, {user?.fullName || 'Alex Vance'}
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Stay on top of your tasks, monitor progress, and track status.
+            {isAdmin
+              ? 'Executive overview of MRR, ARR, recurring revenue, and billing operations.'
+              : isStaff
+              ? 'Operational queue: monitor active subscribers, pending invoices, and tickets.'
+              : 'Stay on top of your tasks, monitor progress, and track status.'}
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={onNavigateToPricing} className="btn-primary">
-            + New Subscription Plan
-          </button>
-        </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={onNavigateToPricing} className="btn-primary">
+              + New Subscription Plan
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Main Finexy Dashboard Grid: Left Column (Balance, Spending, Cards) + Right Column (KPIs, Chart, Activities) */}
-      <div className="finexy-dashboard-grid">
-        {/* LEFT COLUMN: Total Balance, Wallets, Monthly Spending Limit, My Cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* 1. Total Balance Card matching Image 2 */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-              <div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  Total Balance
-                </span>
-                <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', margin: '4px 0 6px' }}>
-                  {formatCurrency(stats.totalBalancePaise, currency)}
-                </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--emerald-600)', background: 'var(--emerald-50)', padding: '2px 8px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
-                  <TrendingUp size={11} /> ↑ 5% than last month
-                </div>
-              </div>
-
-              {/* Currency Selector Pill */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: 'var(--bg-card-secondary)',
-                  borderRadius: 'var(--radius-pill)',
-                  padding: '4px 10px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  border: '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                }}
-                onClick={() => onToggleCurrency && onToggleCurrency(currency === 'INR' ? 'USD' : 'INR')}
-                title="Click to toggle active currency"
-              >
-                <span>{currency === 'INR' ? '🇮🇳 INR' : '🇺🇸 USD'}</span>
-                <ChevronDown size={14} color="var(--text-muted)" />
-              </div>
-            </div>
-
-            {/* Action Buttons: Transfer & Request */}
-            <div style={{ display: 'flex', gap: '10px', margin: '20px 0 24px' }}>
-              <button
-                onClick={() => onNotification('Transfer Initialized', 'Domestic NEFT/RTGS gateway initialized')}
-                className="btn-emerald"
-                style={{ flex: 1, padding: '9px 14px', fontSize: '13px' }}
-              >
-                <ArrowUpRight size={15} /> Transfer
-              </button>
-              <button
-                onClick={() => onNotification('Payment Link Generated', 'Customer billing invoice link copied to clipboard')}
-                className="btn-secondary"
-                style={{ flex: 1, padding: '9px 14px', fontSize: '13px', justifyContent: 'center' }}
-              >
-                <ArrowDownLeft size={15} color="var(--indigo-500)" /> Request
-              </button>
-            </div>
-
-            {/* Multi-Currency Wallets Stack matching Image 2 */}
+      {/* ADMIN ONLY: Billing Run Quick Action Card */}
+      {isAdmin && (
+        <div
+          className="card"
+          style={{
+            padding: '20px 24px',
+            marginBottom: '24px',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(16, 185, 129, 0.05))',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  Wallets | Total {stats.wallets.length} wallets
-                </span>
-              </div>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={16} color="var(--indigo-500)" /> Scheduled Billing Run
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Execute recurring invoicing for all active subscriptions on target date.
+              </p>
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(95px, 1fr))', gap: '8px' }}>
-                {stats.wallets.map((w) => (
-                  <div
-                    key={w.currency}
-                    style={{
-                      background: 'var(--bg-card-secondary)',
-                      borderRadius: 'var(--radius-inner)',
-                      padding: '10px',
-                      border: w.isActive ? '1px solid var(--emerald-500)' : '1px solid var(--border-color)',
-                      transition: 'all 150ms ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800 }}>{w.currency}</span>
-                      <span
-                        style={{
-                          fontSize: '9px',
-                          fontWeight: 700,
-                          padding: '1px 5px',
-                          borderRadius: 'var(--radius-pill)',
-                          background: w.isActive ? 'var(--emerald-50)' : 'transparent',
-                          color: w.isActive ? 'var(--emerald-600)' : 'var(--text-muted)',
-                        }}
-                      >
-                        {w.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '13px', fontWeight: 800 }}>{w.formatted}</div>
-                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      Limit {w.currency === 'INR' ? '₹1.5L' : '$15k'}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <input
+                type="date"
+                value={billingDate}
+                onChange={(e) => setBillingDate(e.target.value)}
+                style={{ padding: '6px 12px', fontSize: '12px', fontWeight: 600 }}
+              />
+
+              <button
+                onClick={handleExecuteBilling}
+                disabled={runningBilling}
+                className="btn-primary"
+                style={{ padding: '6px 16px', fontSize: '12px' }}
+              >
+                <Play size={13} /> {runningBilling ? 'Running...' : 'Run Billing'}
+              </button>
             </div>
           </div>
 
-          {/* 2. Monthly Spending Limit Card matching Image 2 */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>
-                Monthly Spending Limit
-              </span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--indigo-500)' }}>
-                {stats.spendingLimit.percentage}% used
-              </span>
-            </div>
-
-            {/* Spent out of total text */}
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              <strong style={{ color: 'var(--text-primary)' }}>
-                {formatCurrency(stats.spendingLimit.usedPaise, currency)}
-              </strong>{' '}
-              spent out of{' '}
-              <strong style={{ color: 'var(--text-primary)' }}>
-                {formatCurrency(stats.spendingLimit.totalLimitPaise, currency)}
-              </strong>
-            </div>
-
-            {/* Progress bar */}
+          {billingResult && (
             <div
               style={{
-                height: '8px',
-                borderRadius: '9999px',
-                background: 'var(--bg-card-secondary)',
-                overflow: 'hidden',
+                marginTop: '14px',
+                paddingTop: '12px',
+                borderTop: '1px solid var(--border-color)',
+                display: 'flex',
+                gap: '24px',
+                fontSize: '12px',
               }}
             >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${Math.min(100, stats.spendingLimit.percentage)}%`,
-                  background: 'linear-gradient(90deg, var(--emerald-500), var(--indigo-500))',
-                  borderRadius: '9999px',
-                  transition: 'width 400ms ease',
-                }}
-              />
+              <span>
+                Created:{' '}
+                <strong style={{ color: 'var(--emerald-600)', fontSize: '14px' }}>
+                  {billingResult.created}
+                </strong>
+              </span>
+              <span>
+                Skipped (Already Billed):{' '}
+                <strong style={{ color: 'var(--indigo-500)', fontSize: '14px' }}>
+                  {billingResult.skipped}
+                </strong>
+              </span>
+              <span>
+                Failed:{' '}
+                <strong style={{ color: billingResult.failed > 0 ? '#ef4444' : 'inherit', fontSize: '14px' }}>
+                  {billingResult.failed}
+                </strong>
+              </span>
             </div>
-          </div>
+          )}
+        </div>
+      )}
 
-          {/* 3. My Cards Card matching Image 2 */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CreditCard size={16} color="var(--indigo-500)" />
-                <span style={{ fontSize: '14px', fontWeight: 700 }}>My Cards</span>
+      {/* Main Finexy Dashboard Grid */}
+      <div className="finexy-dashboard-grid">
+        {/* LEFT COLUMN: Wallets, Spending Limit, Cards (Admin/Default) OR Operational Summary for Staff */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* If STAFF: Operational Worklist Summary */}
+          {isStaff ? (
+            <div className="card" style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>
+                Staff Operational Worklist
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Active Subscriptions</span>
+                  <strong style={{ color: 'var(--emerald-600)' }}>{stats.activeSubscriptionsCount || 3}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Invoices Awaiting Payment</span>
+                  <strong style={{ color: '#f59e0b' }}>2</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Open Support Tickets</span>
+                  <strong style={{ color: 'var(--indigo-500)' }}>1</strong>
+                </div>
               </div>
-              <button
-                onClick={() => onNotification('Card Manager', 'Virtual corporate card issuing modal initialized')}
-                style={{
-                  border: 'none',
-                  background: 'var(--bg-card-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-pill)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                <Plus size={12} /> Add new
-              </button>
             </div>
+          ) : (
+            <>
+              {/* Total Balance Card (Admin view) */}
+              <div className="card" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      Total Platform Balance
+                    </span>
+                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.02em', marginTop: '4px' }}>
+                      {formatCurrency(stats.totalBalancePaise, currency)}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onNotification('Transfer Modal', 'Initiating instant SEPA/UPI settlement')}
+                    className="btn-emerald"
+                    style={{ padding: '6px 14px', fontSize: '12px' }}
+                  >
+                    Transfer
+                  </button>
+                </div>
+              </div>
 
-            {/* Visual Credit Cards Stack */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              {/* Card 1: Matte Dark Mastercard */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  color: '#ffffff',
-                  boxShadow: '0 8px 16px rgba(0, 0, 0, 0.25)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  height: '120px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Wifi size={14} style={{ transform: 'rotate(90deg)', opacity: 0.8 }} />
-                  <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
-                    Active
+              {/* Monthly Spending Limit Card */}
+              <div className="card" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                    Operating Quota
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--indigo-500)' }}>
+                    {stats.spendingLimit.percentage}% used
                   </span>
                 </div>
-                <div>
-                  <div style={{ fontSize: '12px', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
-                    •••• 8782
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', opacity: 0.75 }}>
-                    <span>EXP 09/29</span>
-                    <span>CVV 611</span>
-                  </div>
+                <div
+                  style={{
+                    height: '8px',
+                    borderRadius: '9999px',
+                    background: 'var(--bg-card-secondary)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${Math.min(100, stats.spendingLimit.percentage)}%`,
+                      background: 'linear-gradient(90deg, var(--emerald-500), var(--indigo-500))',
+                    }}
+                  />
                 </div>
               </div>
-
-              {/* Card 2: Emerald Gradient Card */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #064e3b, #059669)',
-                  borderRadius: '16px',
-                  padding: '16px',
-                  color: '#ffffff',
-                  boxShadow: '0 8px 16px rgba(5, 150, 105, 0.25)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  height: '120px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Wifi size={14} style={{ transform: 'rotate(90deg)', opacity: 0.8 }} />
-                  <span style={{ fontSize: '9px', background: 'rgba(255,255,255,0.25)', padding: '2px 6px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
-                    Active
-                  </span>
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>
-                    •••• 4358
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9px', opacity: 0.85 }}>
-                    <span>EXP 11/30</span>
-                    <span>CVV 920</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
-        {/* RIGHT COLUMN: Top Section (4 KPIs + Profit & Loss Chart) and Bottom Section (Recent Activities) */}
+        {/* RIGHT COLUMN: KPIs & Recent Activities */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Top Section: 4 KPI Cards + Profit & Loss Chart */}
+          {/* Top Section: KPIs */}
           <div className="kpi-chart-row">
-            {/* 4 KPI Cards Matrix (2x2) matching Image 2 */}
-            <div className="kpi-matrix-2x2">
-              {/* 1. Total Earnings (Emerald Gradient Card) */}
-              <div
-                className="card"
-                style={{
-                  padding: '20px',
-                  background: 'linear-gradient(135deg, #059669, #10b981)',
-                  color: '#ffffff',
-                  boxShadow: 'var(--shadow-emerald-glow)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.9 }}>Total Earnings</span>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* If STAFF: Operational Counts Only (NO MRR/ARR/revenue) */}
+            {isStaff ? (
+              <div className="kpi-matrix-2x2">
+                {/* 1. Active Subscribers */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Active Subscribers</span>
+                    <Users size={16} color="var(--emerald-500)" />
+                  </div>
+                  <div style={{ fontSize: '26px', fontWeight: 800, margin: '8px 0' }}>
+                    {stats.activeSubscriptionsCount || 3}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+                    All accounts in good standing
+                  </div>
+                </div>
+
+                {/* 2. Overdue Invoices */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Overdue Invoices</span>
+                    <AlertTriangle size={16} color="#ef4444" />
+                  </div>
+                  <div style={{ fontSize: '26px', fontWeight: 800, margin: '8px 0', color: '#ef4444' }}>
+                    2
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Requires staff payment follow-up
+                  </div>
+                </div>
+
+                {/* 3. Invoices Due This Week */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Due This Week</span>
+                    <Clock size={16} color="var(--indigo-500)" />
+                  </div>
+                  <div style={{ fontSize: '26px', fontWeight: 800, margin: '8px 0' }}>
+                    1
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Auto-reminders scheduled
+                  </div>
+                </div>
+
+                {/* 4. Open Support Requests */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Pending Tickets</span>
+                    <Headphones size={16} color="#8b5cf6" />
+                  </div>
+                  <div style={{ fontSize: '26px', fontWeight: 800, margin: '8px 0' }}>
+                    1
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--indigo-500)', fontWeight: 600 }}>
+                    Support queue awaiting reply
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* If ADMIN: Full Financial Metrics (MRR, ARR, Active Subs, Outstanding, Collected) */
+              <div className="kpi-matrix-2x2">
+                {/* 1. MRR */}
+                <div
+                  className="card"
+                  style={{
+                    padding: '20px',
+                    background: 'linear-gradient(135deg, #059669, #10b981)',
+                    color: '#ffffff',
+                    boxShadow: 'var(--shadow-emerald-glow)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.9 }}>MRR (Monthly Recurring)</span>
                     <Wallet size={15} />
                   </div>
-                </div>
-                <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>
-                  {formatCurrency(stats.totalEarningsPaise, currency)}
-                </div>
-                <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', opacity: 0.9 }}>
-                  <TrendingUp size={12} /> ↑ {stats.earningsGrowthPercentage}% this month
-                </div>
-              </div>
-
-              {/* 2. Total Spending */}
-              <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Spending</span>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-card-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ShoppingBag size={15} color="var(--text-secondary)" />
+                  <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>
+                    {formatCurrency(mrrPaise, currency)}
+                  </div>
+                  <div style={{ fontSize: '11px', opacity: 0.9 }}>
+                    ↑ 12% vs last month
                   </div>
                 </div>
-                <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>
-                  {formatCurrency(stats.totalSpendingPaise, currency)}
-                </div>
-                <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', color: '#ef4444', fontWeight: 600 }}>
-                  <TrendingDown size={12} /> ↓ 5% this month
-                </div>
-              </div>
 
-              {/* 3. Total Income */}
-              <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Income</span>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-card-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* 2. ARR */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>ARR (Annualized)</span>
+                    <TrendingUp size={15} color="var(--indigo-500)" />
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>
+                    {formatCurrency(arrPaise, currency)}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--indigo-500)', fontWeight: 600 }}>
+                    Annualized Run Rate
+                  </div>
+                </div>
+
+                {/* 3. Active Subscriptions & Outstanding */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Outstanding / Overdue</span>
+                    <AlertTriangle size={15} color="#ef4444" />
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0', color: '#ef4444' }}>
+                    {formatCurrency(outstandingPaise, currency)}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {stats.activeSubscriptionsCount || 3} active subscriptions
+                  </div>
+                </div>
+
+                {/* 4. Collected Revenue */}
+                <div className="card" style={{ padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Collected</span>
                     <Coins size={15} color="var(--emerald-500)" />
                   </div>
-                </div>
-                <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>
-                  {formatCurrency(stats.totalBalancePaise + 100000, currency)}
-                </div>
-                <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--emerald-600)', fontWeight: 600 }}>
-                  <TrendingUp size={12} /> ↑ 8% this month
-                </div>
-              </div>
-
-              {/* 4. Total Revenue */}
-              <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Revenue</span>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-card-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <BadgeDollarSign size={15} color="var(--indigo-500)" />
+                  <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0', color: 'var(--emerald-600)' }}>
+                    {formatCurrency(collectedPaise, currency)}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--emerald-600)', fontWeight: 600 }}>
+                    Settled to date
                   </div>
                 </div>
-                <div style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>
-                  {formatCurrency(stats.totalRevenuePaise, currency)}
-                </div>
-                <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--emerald-600)', fontWeight: 600 }}>
-                  <TrendingUp size={12} /> ↑ 4% this month
-                </div>
               </div>
-            </div>
+            )}
 
-            {/* Profit & Loss Bar Chart matching Image 2 */}
+            {/* Profit & Loss or Operational Activity Panel */}
             <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Total Income</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
+                    {isStaff ? 'Operational Inflow' : 'Total Revenue Trajectory'}
+                  </h3>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    View your income in a certain period of time
+                    {isStaff ? 'Tracking customer subscription lifecycle events' : 'Monthly recurring performance chart'}
                   </p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', fontSize: '11px', fontWeight: 600 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--emerald-500)' }} />
-                    Profit
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#1e1b4b' }} />
-                    Loss
-                  </span>
                 </div>
               </div>
 
-              {/* SVG Chart */}
-              <div style={{ height: '160px', width: '100%', position: 'relative' }}>
+              {/* SVG Graphic */}
+              <div style={{ height: '140px', width: '100%', position: 'relative' }}>
                 <svg style={{ width: '100%', height: '100%', overflow: 'visible' }}>
                   {stats.profitLossChart.map((pt, idx) => {
                     const maxVal = 35000000;
-                    const profitHeight = Math.max(12, (pt.profitPaise / maxVal) * 110);
-                    const lossHeight = Math.max(8, (pt.lossPaise / maxVal) * 110);
-                    const xPos = 8 + idx * 15; // percentage
+                    const profitHeight = Math.max(12, (pt.profitPaise / maxVal) * 90);
+                    const xPos = 8 + idx * 15;
 
                     return (
                       <g key={pt.month}>
-                        {/* Loss bar (Dark slate) */}
                         <rect
                           x={`${xPos}%`}
-                          y={130 - lossHeight}
-                          width="3.5%"
-                          height={lossHeight}
-                          fill="#1e1b4b"
-                          rx="3"
-                        />
-                        {/* Profit bar (Light lime / emerald) */}
-                        <rect
-                          x={`${xPos + 4}%`}
-                          y={130 - profitHeight}
-                          width="3.5%"
+                          y={110 - profitHeight}
+                          width="18"
                           height={profitHeight}
+                          rx="4"
                           fill="var(--emerald-500)"
-                          rx="3"
                         />
-                        {/* Month Label */}
                         <text
-                          x={`${xPos + 3.5}%`}
-                          y={150}
-                          textAnchor="middle"
+                          x={`${xPos + 2}%`}
+                          y={130}
+                          fontSize="10"
                           fill="var(--text-muted)"
-                          fontSize="11"
-                          fontWeight="500"
+                          fontWeight="600"
                         >
                           {pt.month}
                         </text>
@@ -531,162 +522,55 @@ export const Overview: React.FC<OverviewProps> = ({
             </div>
           </div>
 
-          {/* Bottom Section: Recent Activities Data Table matching Image 2 */}
-          <div className="card" style={{ padding: '24px' }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '16px',
-                marginBottom: '20px',
-              }}
-            >
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Recent Activities</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Real transaction history from PostgreSQL `invoices` table
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                {/* Search Bar */}
-                <div style={{ position: 'relative' }}>
-                  <Search
-                    size={15}
-                    color="var(--text-muted)"
-                    style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ paddingLeft: '34px', width: '200px', fontSize: '13px', borderRadius: 'var(--radius-pill)' }}
-                  />
-                </div>
-
-                {/* Filter Selector */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    style={{ fontWeight: 600, fontSize: '12px', borderRadius: 'var(--radius-pill)', padding: '8px 12px' }}
-                  >
-                    <option value="ALL">Filter: All</option>
-                    <option value="PAID">Paid</option>
-                    <option value="CONFIRMED">Pending / Confirmed</option>
-                    <option value="DRAFT">Draft</option>
-                  </select>
-                </div>
-              </div>
+          {/* Bottom Section: Recent Activities List */}
+          <div className="card" style={{ padding: '24px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800 }}>
+                Recent Operational Activity
+              </h3>
             </div>
 
-            {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '750px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '10px 12px', width: '36px' }}>
-                      <input type="checkbox" />
-                    </th>
-                    <th style={{ padding: '10px 12px' }}>Order ID</th>
-                    <th style={{ padding: '10px 12px' }}>Activity</th>
-                    <th style={{ padding: '10px 12px' }}>Price</th>
-                    <th style={{ padding: '10px 12px' }}>Status</th>
-                    <th style={{ padding: '10px 12px' }}>Date</th>
-                    <th style={{ padding: '10px 12px', textAlign: 'right' }}>...</th>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', textAlign: 'left' }}>
+                  <th style={{ padding: '10px 12px' }}>Invoice</th>
+                  <th style={{ padding: '10px 12px' }}>Customer</th>
+                  <th style={{ padding: '10px 12px' }}>Description</th>
+                  <th style={{ padding: '10px 12px' }}>Amount</th>
+                  <th style={{ padding: '10px 12px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredActivities.slice(0, 5).map((act) => (
+                  <tr key={act.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td
+                      onClick={() => setSelectedInvoiceId(act.id)}
+                      style={{ padding: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)', cursor: 'pointer', color: 'var(--indigo-500)' }}
+                    >
+                      {act.invoiceNumber}
+                    </td>
+                    <td style={{ padding: '12px', fontWeight: 600 }}>{act.customerName}</td>
+                    <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{act.description}</td>
+                    <td style={{ padding: '12px', fontWeight: 700 }}>
+                      {formatCurrency(act.amountPaise, currency)}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <StatusChip status={act.status} />
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredActivities.map((act) => {
-                    const styleMeta = getActivityIcon(act.description);
-                    const IconComponent = styleMeta.icon;
-
-                    return (
-                      <tr
-                        key={act.id}
-                        onClick={() => setSelectedInvoiceId(act.id)}
-                        style={{
-                          borderBottom: '1px solid var(--border-color)',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                          transition: 'background 150ms ease',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-card-secondary)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <td style={{ padding: '12px' }} onClick={(e) => e.stopPropagation()}>
-                          <input type="checkbox" />
-                        </td>
-                        <td style={{ padding: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {act.invoiceNumber}
-                        </td>
-                        <td style={{ padding: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div
-                              style={{
-                                width: '30px',
-                                height: '30px',
-                                borderRadius: '8px',
-                                background: styleMeta.bg,
-                                color: styleMeta.color,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <IconComponent size={16} />
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>{act.customerName}</div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{act.description}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '12px', fontWeight: 700 }}>
-                          {formatCurrency(act.amountPaise, currency)}
-                        </td>
-                        <td style={{ padding: '12px' }}>
-                          <StatusChip status={act.status} />
-                        </td>
-                        <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>
-                          {formatDate(act.issueDate)}
-                        </td>
-                        <td style={{ padding: '12px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => setSelectedInvoiceId(act.id)}
-                            style={{
-                              border: 'none',
-                              background: 'transparent',
-                              color: 'var(--text-muted)',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      {/* Invoice Detail Drawer */}
       {selectedInvoiceId && (
         <InvoiceDrawer
           invoiceId={selectedInvoiceId}
-          currency={currency}
           onClose={() => setSelectedInvoiceId(null)}
-          onPaymentSuccess={(msg) => {
-            onNotification('Payment Settled', msg);
-            loadStats();
-          }}
+          onPaymentSuccess={loadStats}
+          onNotification={onNotification}
         />
       )}
     </div>

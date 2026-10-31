@@ -72,9 +72,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       await api.createSubscription({
         customerId: selectedCustomerId,
-        planId: plan.id,
+        planVersionId: plan.currentVersionId || plan.id,
         billingCycle,
-        discountCode: couponCode || undefined,
       });
       onSuccess(`Subscribed to ${plan.name} plan successfully! Real invoice generated.`);
       onClose();

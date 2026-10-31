@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Bell, Info, ChevronDown } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Search, Bell, Info, LogOut, ShieldCheck, UserCheck, Shield } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -14,14 +15,29 @@ export const Navbar: React.FC<NavbarProps> = ({
   currency,
   setCurrency,
 }) => {
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'activity', label: 'Activity' },
-    { id: 'pricing', label: 'Pricing Matrix' },
-    { id: 'manage', label: 'Manage' },
-    { id: 'discounts', label: 'Discounts' },
-    { id: 'support', label: 'Support Queue' },
-  ];
+  const { user, logout } = useAuth();
+
+  const getRoleBadge = (role?: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return { label: 'ADMIN', bg: '#fef3c7', color: '#b45309' };
+      case 'STAFF':
+        return { label: 'STAFF', bg: '#ede9fe', color: '#6d28d9' };
+      case 'CUSTOMER':
+      default:
+        return { label: 'CUSTOMER', bg: 'var(--emerald-50)', color: 'var(--emerald-600)' };
+    }
+  };
+
+  const badge = getRoleBadge(user?.role);
+  const initials = user?.fullName
+    ? user.fullName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'U';
 
   return (
     <header
@@ -72,41 +88,28 @@ export const Navbar: React.FC<NavbarProps> = ({
         </span>
       </div>
 
-      {/* Floating Center Tabs */}
-      <nav
+      {/* Center Breadcrumb/Status Pill */}
+      <div
         className="floating-pill"
         style={{
+          padding: '8px 20px',
+          fontSize: '13px',
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
-          padding: '6px 8px',
+          gap: '8px',
           pointerEvents: 'auto',
         }}
       >
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                border: 'none',
-                background: isActive ? 'var(--text-primary)' : 'transparent',
-                color: isActive ? 'var(--bg-card)' : 'var(--text-secondary)',
-                padding: '8px 18px',
-                borderRadius: 'var(--radius-pill)',
-                fontSize: '13px',
-                fontWeight: isActive ? 600 : 500,
-                cursor: 'pointer',
-                transition: 'all 200ms ease',
-                boxShadow: isActive ? '0 2px 10px rgba(0, 0, 0, 0.15)' : 'none',
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </nav>
+        <span style={{ textTransform: 'uppercase', fontSize: '11px', color: 'var(--text-muted)' }}>
+          {user?.role === 'CUSTOMER' ? 'Client Portal' : `${user?.role || 'Guest'} Workspace`}
+        </span>
+        <span>/</span>
+        <span style={{ color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+          {activeTab.replace('-', ' ')}
+        </span>
+      </div>
 
       {/* Right Controls */}
       <div
@@ -163,81 +166,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
-        {/* Search Icon */}
-        <button
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            borderRadius: '50%',
-          }}
-          title="Search"
-        >
-          <Search size={17} />
-        </button>
-
-        {/* Notification Bell */}
-        <button
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            borderRadius: '50%',
-            position: 'relative',
-          }}
-          title="Notifications"
-        >
-          <Bell size={17} />
-          <span
-            style={{
-              position: 'absolute',
-              top: '4px',
-              right: '4px',
-              width: '6px',
-              height: '6px',
-              background: 'var(--emerald-500)',
-              borderRadius: '50%',
-            }}
-          />
-        </button>
-
-        {/* Info Icon */}
-        <button
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '6px',
-            borderRadius: '50%',
-          }}
-          title="System Information"
-        >
-          <Info size={17} />
-        </button>
-
-        {/* User Profile matching Finexy */}
+        {/* STEP 4: Top-right user menu with Name, Role, and Log out */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            paddingLeft: '4px',
+            gap: '10px',
+            paddingLeft: '6px',
             borderLeft: '1px solid var(--border-color)',
-            cursor: 'pointer',
           }}
         >
           <div
@@ -255,13 +191,50 @@ export const Navbar: React.FC<NavbarProps> = ({
               boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
             }}
           >
-            AV
+            {initials}
           </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: '1.2' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700 }}>Alex Vance</span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>alex@finexy.com</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>{user?.fullName || 'Anonymous'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: 'var(--radius-pill)',
+                  background: badge.bg,
+                  color: badge.color,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {badge.label}
+              </span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{user?.email}</span>
+            </div>
           </div>
-          <ChevronDown size={14} color="var(--text-muted)" />
+
+          <button
+            onClick={logout}
+            title="Log out"
+            style={{
+              border: 'none',
+              background: 'var(--bg-card-secondary)',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 10px',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '11px',
+              fontWeight: 700,
+              marginLeft: '4px',
+              transition: 'all 150ms ease',
+            }}
+          >
+            <LogOut size={13} /> Log out
+          </button>
         </div>
       </div>
     </header>
