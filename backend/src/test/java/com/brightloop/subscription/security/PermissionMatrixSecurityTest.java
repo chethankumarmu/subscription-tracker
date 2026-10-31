@@ -32,6 +32,8 @@ import com.brightloop.subscription.support.dto.SupportTicketDto;
 import com.brightloop.subscription.support.entity.SupportTicket;
 import com.brightloop.subscription.support.entity.TicketComment;
 import com.brightloop.subscription.support.repository.*;
+import com.brightloop.subscription.chatbot.repository.ChatMessageRepository;
+import com.brightloop.subscription.chatbot.repository.ChatSessionRepository;
 import com.brightloop.subscription.support.service.SupportChatbotService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
