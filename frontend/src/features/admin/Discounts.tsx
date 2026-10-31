@@ -79,6 +79,11 @@ export const Discounts: React.FC<DiscountsProps> = ({
         </button>
       </div>
 
+      {loading ? (
+        <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+          Loading discount promotions from PostgreSQL...
+        </p>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         {discounts.map((d) => (
           <div key={d.id} className="card" style={{ padding: '24px' }}>
@@ -148,6 +153,7 @@ export const Discounts: React.FC<DiscountsProps> = ({
           </div>
         ))}
       </div>
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (
