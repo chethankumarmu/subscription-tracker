@@ -1,7 +1,7 @@
 -- V10__reminders_and_email_attachment.sql
 -- Subscriptions reminders tracking and email outbox attachment reference
 
-CREATE TABLE subscription_reminders (
+CREATE TABLE IF NOT EXISTS subscription_reminders (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     subscription_id BIGINT NOT NULL REFERENCES subscriptions(id) ON DELETE RESTRICT,
     days_before INTEGER NOT NULL,
@@ -10,5 +10,5 @@ CREATE TABLE subscription_reminders (
 );
 
 ALTER TABLE email_outbox
-    ADD COLUMN attachment_invoice_id BIGINT REFERENCES invoices(id) ON DELETE SET NULL,
-    ADD COLUMN attachment_name VARCHAR(255);
+    ADD COLUMN IF NOT EXISTS attachment_invoice_id BIGINT REFERENCES invoices(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);

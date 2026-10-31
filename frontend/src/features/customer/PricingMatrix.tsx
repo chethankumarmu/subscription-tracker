@@ -296,71 +296,153 @@ export const PricingMatrix: React.FC<PricingMatrixProps> = ({
           <tbody>
             <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Active Projects</td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center' }}>3 Projects</td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', color: 'var(--indigo-500)', fontWeight: 600 }}>
-                Unlimited
-              </td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', fontWeight: 600 }}>Unlimited</td>
+              {plans.map((p) => (
+                <td
+                  key={p.id}
+                  style={{
+                    padding: '16px',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                    fontWeight: p.featureMap?.projects === -1 ? 600 : 500,
+                    color: p.featureMap?.projects === -1 ? 'var(--indigo-500)' : 'inherit',
+                  }}
+                >
+                  {p.featureMap?.projects === -1 ? 'Unlimited' : `${p.featureMap?.projects ?? 3} Projects`}
+                </td>
+              ))}
             </tr>
             <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Cloud Storage</td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center' }}>5 GB</td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', color: 'var(--indigo-500)', fontWeight: 600 }}>
-                50 GB
-              </td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', fontWeight: 600 }}>500 GB Dedicated</td>
+              {plans.map((p) => (
+                <td
+                  key={p.id}
+                  style={{
+                    padding: '16px',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                    fontWeight: (p.featureMap?.storage_gb || 0) >= 50 ? 600 : 500,
+                    color: (p.featureMap?.storage_gb || 0) >= 50 ? 'var(--indigo-500)' : 'inherit',
+                  }}
+                >
+                  {p.featureMap?.storage_gb === -1 ? 'Unlimited' : `${p.featureMap?.storage_gb ?? 5} GB NVMe`}
+                </td>
+              ))}
             </tr>
             <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Custom Domains</td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', color: 'var(--text-muted)' }}>—</td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', color: 'var(--indigo-500)', fontWeight: 600 }}>
-                3 Domains
-              </td>
-              <td style={{ padding: '16px', fontSize: '13px', textAlign: 'center', fontWeight: 600 }}>Unlimited</td>
+              {plans.map((p) => (
+                <td
+                  key={p.id}
+                  style={{
+                    padding: '16px',
+                    fontSize: '13px',
+                    textAlign: 'center',
+                    color: !p.featureMap?.custom_domains ? 'var(--text-muted)' : 'inherit',
+                    fontWeight: (p.featureMap?.custom_domains || 0) > 0 ? 600 : 400,
+                  }}
+                >
+                  {!p.featureMap?.custom_domains
+                    ? '—'
+                    : p.featureMap?.custom_domains === -1
+                    ? 'Unlimited'
+                    : `${p.featureMap?.custom_domains} Domains`}
+                </td>
+              ))}
             </tr>
             <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Template Library</td>
-              <td style={{ padding: '16px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', background: 'var(--bg-card-secondary)', padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 600 }}>
-                  BASIC LIBRARY
-                </span>
-              </td>
-              <td style={{ padding: '16px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', background: 'var(--violet-100)', color: 'var(--indigo-600)', padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
-                  PRO LIBRARY
-                </span>
-              </td>
-              <td style={{ padding: '16px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', background: 'var(--emerald-50)', color: 'var(--emerald-600)', padding: '3px 10px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}>
-                  FULL LIBRARY
-                </span>
-              </td>
+              {plans.map((p) => {
+                const tmpl = p.featureMap?.templates ?? 10;
+                const isFull = tmpl === -1;
+                const isPro = tmpl >= 50;
+                return (
+                  <td key={p.id} style={{ padding: '16px', textAlign: 'center' }}>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        background: isFull
+                          ? 'var(--emerald-50)'
+                          : isPro
+                          ? 'var(--violet-100)'
+                          : 'var(--bg-card-secondary)',
+                        color: isFull
+                          ? 'var(--emerald-600)'
+                          : isPro
+                          ? 'var(--indigo-600)'
+                          : 'var(--text-secondary)',
+                        padding: '3px 10px',
+                        borderRadius: 'var(--radius-pill)',
+                        fontWeight: isFull || isPro ? 700 : 600,
+                      }}
+                    >
+                      {isFull ? 'FULL LIBRARY' : isPro ? 'PRO LIBRARY' : 'BASIC LIBRARY'}
+                    </span>
+                  </td>
+                );
+              })}
             </tr>
             <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Priority Support & Escalations</td>
-              <td style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>Community only</td>
-              <td style={{ padding: '16px', textAlign: 'center' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--emerald-500)', fontWeight: 600, fontSize: '13px' }}>
-                  <Check size={16} /> 24/7 Priority
-                </span>
-              </td>
-              <td style={{ padding: '16px', textAlign: 'center' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--emerald-500)', fontWeight: 600, fontSize: '13px' }}>
-                  <Check size={16} /> Dedicated Account Manager
-                </span>
-              </td>
+              {plans.map((p) => {
+                const isEnt = p.code.includes('ENTERPRISE');
+                const isPro = p.code.includes('PRO');
+                return (
+                  <td key={p.id} style={{ padding: '16px', textAlign: 'center' }}>
+                    {isEnt ? (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color: 'var(--emerald-500)',
+                          fontWeight: 600,
+                          fontSize: '13px',
+                        }}
+                      >
+                        <Check size={16} /> Dedicated Account Manager
+                      </span>
+                    ) : isPro ? (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color: 'var(--emerald-500)',
+                          fontWeight: 600,
+                          fontSize: '13px',
+                        }}
+                      >
+                        <Check size={16} /> 24/7 Priority
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Community only</span>
+                    )}
+                  </td>
+                );
+              })}
             </tr>
             <tr>
               <td style={{ padding: '16px', fontSize: '14px', fontWeight: 500 }}>Pause Subscription</td>
-              <td style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <X size={16} style={{ display: 'inline' }} />
-              </td>
-              <td style={{ padding: '16px', textAlign: 'center', color: 'var(--emerald-500)', fontWeight: 600 }}>
-                <Check size={16} style={{ display: 'inline' }} /> Up to 90 days
-              </td>
-              <td style={{ padding: '16px', textAlign: 'center', color: 'var(--emerald-500)', fontWeight: 600 }}>
-                <Check size={16} style={{ display: 'inline' }} /> Flexible
-              </td>
+              {plans.map((p) => (
+                <td key={p.id} style={{ padding: '16px', textAlign: 'center' }}>
+                  {p.allowPause ? (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: 'var(--emerald-500)',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                      }}
+                    >
+                      <Check size={16} /> {p.code.includes('ENTERPRISE') ? 'Flexible' : 'Up to 90 days'}
+                    </span>
+                  ) : (
+                    <X size={16} color="var(--text-muted)" style={{ display: 'inline' }} />
+                  )}
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>

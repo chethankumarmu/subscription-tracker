@@ -21,24 +21,32 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   onSuccess,
 }) => {
   const [method, setMethod] = useState<'CARD' | 'UPI' | 'BANK_TRANSFER' | 'CASH'>('UPI');
-  const [amountPaise, setAmountPaise] = useState<number>(balancePaise);
+  const initialInput = currency === 'USD'
+    ? ((balancePaise / 100) / 85.0).toFixed(2)
+    : (balancePaise / 100).toFixed(2);
+  const [amountInput, setAmountInput] = useState<string>(initialInput);
   const [reference, setReference] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  const parsedVal = parseFloat(amountInput || '0');
+  const calculatedPaise = currency === 'USD'
+    ? Math.round(parsedVal * 85.0 * 100)
+    : Math.round(parsedVal * 100);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (amountPaise <= 0) return;
+    if (calculatedPaise <= 0) return;
     setSubmitting(true);
     try {
       await api.recordPayment({
         invoiceId,
-        amountPaise,
+        amountPaise: calculatedPaise,
         method,
         reference: reference || `REF_${Date.now() % 1000000}`,
         note,
       });
-      onSuccess(`Payment of ${formatCurrency(amountPaise, currency)} recorded against ${invoiceNumber}!`);
+      onSuccess(`Payment of ${formatCurrency(calculatedPaise, currency)} recorded against ${invoiceNumber}!`);
       onClose();
     } catch (err: any) {
       alert(`Error recording payment: ${err.message}`);
@@ -125,13 +133,21 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
           {/* Amount Input */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
-              Amount (in {currency})
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 600 }}>
+                Amount ({currency === 'USD' ? '$ USD' : '₹ INR'})
+              </label>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {currency === 'USD'
+                  ? `≈ ₹${(calculatedPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR`
+                  : `≈ $${((calculatedPaise / 100) / 85.0).toFixed(2)} USD`}
+              </span>
+            </div>
             <input
               type="number"
-              value={amountPaise / 100}
-              onChange={(e) => setAmountPaise(Math.round(parseFloat(e.target.value || '0') * 100))}
+              step="any"
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
               style={{ width: '100%', fontSize: '16px', fontWeight: 700 }}
               required
             />

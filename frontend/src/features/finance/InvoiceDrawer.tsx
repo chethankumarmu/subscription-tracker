@@ -183,6 +183,12 @@ export const InvoiceDrawer: React.FC<InvoiceDrawerProps> = ({
                 <span style={{ color: 'var(--text-secondary)' }}>Subtotal</span>
                 <span>{formatCurrency(invoice.subtotalPaise, currency)}</span>
               </div>
+              {invoice.discountPaise > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--emerald-600)' }}>
+                  <span>Applied Discount</span>
+                  <span>-{formatCurrency(invoice.discountPaise, currency)}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>GST (18%)</span>
                 <span>{formatCurrency(invoice.taxPaise, currency)}</span>

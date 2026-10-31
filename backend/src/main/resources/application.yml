@@ -13,7 +13,8 @@ spring:
       ddl-auto: none
     open-in-view: false
   flyway:
-    enabled: true
+    enabled: false
+    validate-on-migrate: false
     locations: classpath:db/migration
   mail:
     host: smtp.gmail.com
